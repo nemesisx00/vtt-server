@@ -70,7 +70,7 @@ async fn generateUser() -> impl Responder
 			match u.insert(&db).await
 			{
 				Ok(newUser) => { resp = format!("Created new User with id: {}", newUser.id); },
-				Err(e) => println!("{}", e),
+				Err(e) => println!("Failed to insert new User: {}", e),
 			}
 		}
 	}
