@@ -4,6 +4,7 @@ use crate::entities::*;
 use sea_orm::{
 	ConnectionTrait,
 	DatabaseConnection,
+	DbErr,
 	EntityTrait,
 	Schema,
 };
@@ -17,12 +18,15 @@ async fn createTable<E>(db: &DatabaseConnection, entity: E)
 	
 	match db.execute(stmt).await
 	{
-		Ok(_) => println!("Migrated {}", entity.table_name()),
+		Ok(_) => {},//println!("Migrated {}", entity.table_name()),
 		Err(e) => println!("Error: {}", e),
 	};
 }
 
-pub async fn createTables(db: &DatabaseConnection)
+pub async fn createAllTables(db: &DatabaseConnection) -> Result<(), DbErr>
 {
 	createTable(db, User).await;
+	createTable(db, Token).await;
+	
+	return Ok(());
 }

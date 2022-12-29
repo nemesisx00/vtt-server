@@ -1,9 +1,13 @@
 #![allow(dead_code, non_snake_case, non_upper_case_globals)]
 
+mod database;
 mod entities;
 mod migrations;
 
-use crate::migrations::createTables;
+use crate::{
+	entities::*,
+	database::getDatabaseConnection,
+};
 use actix_web::{
 	get,
 	post,
@@ -12,33 +16,30 @@ use actix_web::{
 	HttpServer,
 	Responder,
 };
-use futures::executor::block_on;
 use sea_orm::{
-	Database,
-	DbErr,
+	EntityTrait,
+	Set, ActiveModelTrait,
 };
-use sea_orm_migration::prelude::*;
-
-/*
-MySQL				mysql://root:root@localhost:3306
-PostgreSQL			postgres://root:root@localhost:5432
-SQLite (in file)	sqlite:./sqlite.db?mode=rwc
-SQLite (in memory)	sqlite::memory:
-*/
-const DatabaseConnectionString: &str = "sqlite:./sqlite.db?mode=rwc";
-const DatabaseName: &str = "test";
-
-async fn runMigrations() -> Result<(), DbErr>
-{
-	let db = Database::connect(DatabaseConnectionString).await?;
-	createTables(&db).await;
-	return Ok(());
-}
 
 #[get("/")]
 async fn hello() -> impl Responder
 {
-	HttpResponse::Ok().body("Hello VTT World!")
+	let mut user = None;
+	if let Ok(db) = getDatabaseConnection().await
+	{
+		if let Ok(u) = User::find_by_id(1).one(&db).await
+		{
+			user = u;
+		}
+	}
+	
+	let resp = match user
+	{
+		Some(u) => format!("Hello {}!", u.label),
+		None => "Hello VTT World! No User found!".to_string(),
+	};
+	
+	return HttpResponse::Ok().body(resp);
 }
 
 #[post("/echo")]
@@ -47,19 +48,45 @@ async fn echo(reqBody: String) -> impl Responder
 	HttpResponse::Ok().body(reqBody)
 }
 
+#[get("/generateUser")]
+async fn generateUser() -> impl Responder
+{
+	let mut resp = "Failed to create new User.".to_string();
+	if let Ok(db) = getDatabaseConnection().await
+	{
+		if let Ok(Some(_)) = User::find_by_id(1).one(&db).await
+		{
+			resp = "User already exists!".to_string();
+		}
+		else
+		{
+			let u = user::ActiveModel
+			{
+				label: Set("John Doe".to_owned()),
+				name: Set(Some("Jake Smith".to_owned())),
+				..Default::default()
+			};
+			
+			match u.insert(&db).await
+			{
+				Ok(newUser) => { resp = format!("Created new User with id: {}", newUser.id); },
+				Err(e) => println!("{}", e),
+			}
+		}
+	}
+	
+	return HttpResponse::Ok().body(resp);
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
-	if let Err(err) = block_on(runMigrations())
-	{
-		panic!("{}", err);
-	}
-	
 	return HttpServer::new(||
 	{
 		App::new()
 			.service(hello)
 			.service(echo)
+			.service(generateUser)
 	})
 		.bind(("127.0.0.1", 8080))?
 		.run()
