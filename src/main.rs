@@ -1,12 +1,17 @@
 #![allow(dead_code, non_snake_case, non_upper_case_globals)]
 
+mod api;
 mod database;
 mod entities;
 mod migrations;
 
 use crate::{
+	api::structs::*,
 	entities::*,
-	database::getDatabaseConnection,
+	database::{
+		findUserById,
+		getDatabaseConnection,
+	},
 };
 use actix_web::{
 	get,
@@ -21,31 +26,10 @@ use sea_orm::{
 	Set, ActiveModelTrait,
 };
 
-#[get("/")]
-async fn hello() -> impl Responder
-{
-	let mut user = None;
-	if let Ok(db) = getDatabaseConnection().await
-	{
-		if let Ok(u) = User::find_by_id(1).one(&db).await
-		{
-			user = u;
-		}
-	}
-	
-	let resp = match user
-	{
-		Some(u) => format!("Hello {}!", u.label),
-		None => "Hello VTT World! No User found!".to_string(),
-	};
-	
-	return HttpResponse::Ok().body(resp);
-}
-
 #[post("/echo")]
 async fn echo(reqBody: String) -> impl Responder
 {
-	HttpResponse::Ok().body(reqBody)
+	return HttpResponse::Ok().body(reqBody);
 }
 
 #[get("/generateUser")]
@@ -78,15 +62,46 @@ async fn generateUser() -> impl Responder
 	return HttpResponse::Ok().body(resp);
 }
 
+#[get("/")]
+async fn hello() -> impl Responder
+{
+	return HttpResponse::Ok().body("Hello VTT World!");
+}
+
+#[post("/login")]
+async fn login(json: String) -> impl Responder
+{
+	let loginData: LoginData = serde_json::from_str(&json).unwrap();
+	
+	let mut resp = LoginResponseData
+	{
+		Message: "No User found!".to_string(),
+		..Default::default()
+	};
+	
+	if let Some(userId) = loginData.UserId
+	{
+		if let Some(u) = findUserById(userId).await
+		{
+			resp.UserId = Some(u.id);
+			resp.Message = format!("Hello {}!", u.label);
+		}
+	}
+	
+	let respJson = serde_json::to_string(&resp).unwrap();
+	return HttpResponse::Ok().body(respJson);
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
 	return HttpServer::new(||
 	{
 		App::new()
-			.service(hello)
 			.service(echo)
 			.service(generateUser)
+			.service(hello)
+			.service(login)
 	})
 		.bind(("127.0.0.1", 8080))?
 		.run()
