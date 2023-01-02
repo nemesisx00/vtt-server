@@ -1,17 +1,19 @@
 #![allow(dead_code, non_snake_case, non_upper_case_globals)]
 
 mod api;
+mod config;
 mod database;
 mod entities;
 mod migrations;
 
 use crate::{
 	api::structs::*,
-	entities::*,
+	config::loadConfig,
 	database::{
 		findUserById,
 		getDatabaseConnection,
 	},
+	entities::*,
 };
 use actix_web::{
 	get,
@@ -25,6 +27,24 @@ use sea_orm::{
 	EntityTrait,
 	Set, ActiveModelTrait,
 };
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()>
+{
+	let config = loadConfig("./config.json");
+	
+	return HttpServer::new(||
+	{
+		App::new()
+			.service(echo)
+			.service(generateUser)
+			.service(hello)
+			.service(login)
+	})
+		.bind((config.network.ip, config.network.port))?
+		.run()
+		.await;
+}
 
 #[post("/echo")]
 async fn echo(reqBody: String) -> impl Responder
@@ -90,20 +110,4 @@ async fn login(json: String) -> impl Responder
 	
 	let respJson = serde_json::to_string(&resp).unwrap();
 	return HttpResponse::Ok().body(respJson);
-}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()>
-{
-	return HttpServer::new(||
-	{
-		App::new()
-			.service(echo)
-			.service(generateUser)
-			.service(hello)
-			.service(login)
-	})
-		.bind(("127.0.0.1", 8080))?
-		.run()
-		.await;
 }
