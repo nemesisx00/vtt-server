@@ -8,7 +8,10 @@ mod migrations;
 
 use crate::{
 	api::structs::*,
-	config::loadConfig,
+	config::{
+		loadConfig,
+		ConfigPath,
+	},
 	database::{
 		findUserById,
 		getDatabaseConnection,
@@ -31,7 +34,7 @@ use sea_orm::{
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
-	let config = loadConfig("./config.json");
+	let config = loadConfig(ConfigPath);
 	
 	return HttpServer::new(||
 	{
