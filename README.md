@@ -2,6 +2,7 @@
 An as of yet unnamed Virtual TableTop server being written in [Rust](https://www.rust-lang.org/).
 
 # Requirements
+- [Node](https://nodejs.org/)
 - [Rust](https://www.rust-lang.org/)
 
 # Support
