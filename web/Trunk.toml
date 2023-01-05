@@ -1,0 +1,14 @@
+[build]
+dist = "../target/dist"
+public_url = "/web/"
+release = true
+
+[[hooks]]
+stage = "pre_build"
+command = "powershell"
+command_arguments = ["npm", "run-script", "stylus"]
+
+# [[hooks]]
+# stage = "pre_build"
+# command = "sh"
+# command_arguments = ["-c", "npm", "run-script", "stylus"]

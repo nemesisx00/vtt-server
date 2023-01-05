@@ -1,3 +1,6 @@
+[workspace]
+members = ["web"]
+
 [package]
 name = "vtt-server"
 version = "0.1.0"

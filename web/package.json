@@ -1,0 +1,12 @@
+{
+	"author": "Peter Lunneberg",
+	"devDependencies": {
+		"stylus": "^0.59.0"
+	},
+	"license": "MIT",
+	"name": "vtt-server-web",
+	"version": "1.0.0",
+	"scripts": {
+		"stylus": "stylus --compress ./stylus --out ../target/stylus/app.css"
+	}
+}

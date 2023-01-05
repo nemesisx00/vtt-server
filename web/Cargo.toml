@@ -1,0 +1,13 @@
+[package]
+authors = ["Peter Lunneberg"]
+description = ""
+edition = "2021"
+license = "MIT"
+name = "vtt-server-web"
+publish = false
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dioxus = { version = "0.2.4", features = ["web"] }
