@@ -1,3 +1,4 @@
+**/*.db
 **/*.rs.bk
+**/node_modules
 /target
-sqlite.db
