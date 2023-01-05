@@ -6,9 +6,9 @@ release = true
 [[hooks]]
 stage = "pre_build"
 command = "powershell"
-command_arguments = ["npm", "run-script", "stylus"]
+command_arguments = ["npm", "run", "stylus"]
 
 # [[hooks]]
 # stage = "pre_build"
 # command = "sh"
-# command_arguments = ["-c", "npm", "run-script", "stylus"]
+# command_arguments = ["-c", "npm", "run", "stylus"]
