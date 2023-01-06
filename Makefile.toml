@@ -14,14 +14,14 @@ dependencies = [
 command = "cargo"
 args = ["build"]
 dependencies = [
-	{ name = "trunk-debug", path = "web/Makefile.toml" },
+	{ name = "debug", path = "web/Makefile.toml" },
 ]
 
 [tasks.build-release]
 command = "cargo"
 args = ["build", "--release"]
 dependencies = [
-	{ name = "trunk-release", path = "web/Makefile.toml" },
+	{ name = "release", path = "web/Makefile.toml" },
 ]
 
 [tasks.bundle]

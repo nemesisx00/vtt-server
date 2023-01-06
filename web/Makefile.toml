@@ -1,7 +1,29 @@
+[tasks.debug]
+dependencies = [
+	"npm-install",
+	"stylus",
+	"trunk-debug",
+]
+
+[tasks.release]
+dependencies = [
+	"npm-install",
+	"stylus",
+	"trunk-release",
+]
+
+[tasks.npm-install]
+script_runner = "@shell"
+script = 'npm install'
+
+[tasks.stylus]
+script_runner = "@shell"
+script = 'npm run stylus'
+
 [tasks.trunk-debug]
-command = "powershell"
-args = ["trunk", "build"]
+script_runner = "@shell"
+script = 'trunk build'
 
 [tasks.trunk-release]
-command = "powershell"
-args = ["trunk", "build", "--release"]
+script_runner = "@shell"
+script = 'trunk build --release'

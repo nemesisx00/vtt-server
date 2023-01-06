@@ -7,6 +7,6 @@
 	"name": "vtt-server-web",
 	"version": "1.0.0",
 	"scripts": {
-		"stylus": "npm install && stylus --compress ./stylus --out ../target/stylus/app.css"
+		"stylus": "stylus --compress ./stylus --out ../target/stylus/app.css"
 	}
 }
