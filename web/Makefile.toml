@@ -1,0 +1,7 @@
+[tasks.trunk-debug]
+command = "powershell"
+args = ["trunk", "build"]
+
+[tasks.trunk-release]
+command = "powershell"
+args = ["trunk", "build", "--release"]

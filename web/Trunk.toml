@@ -1,5 +1,5 @@
 [build]
-dist = "../target/dist"
+dist = "../target/web"
 public_url = "/web/"
 release = true
 
