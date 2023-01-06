@@ -34,18 +34,14 @@ cp -r target/web dist # shell2batch: xcopy target\web dist\web /e /i
 
 [tasks.bundle-debug]
 script_runner = "@shell"
-script = '''
-cp target/debug/vtt-server.exe dist
-'''
+script = 'cp target/debug/vtt-server.exe dist'
 dependencies = [
 	"bundle",
 ]
 
 [tasks.bundle-release]
 script_runner = "@shell"
-script = '''
-cp target/release/vtt-server.exe dist
-'''
+script = 'cp target/release/vtt-server.exe dist'
 dependencies = [
 	"bundle",
 ]
