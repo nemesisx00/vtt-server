@@ -2,6 +2,7 @@
 An as of yet unnamed Virtual TableTop server being written in [Rust](https://www.rust-lang.org/).
 
 # Requirements
+- [cargo-make](https://sagiegurari.github.io/cargo-make/)
 - [Node](https://nodejs.org/)
 - [Rust](https://www.rust-lang.org/)
 
