@@ -1,8 +1,13 @@
 #![allow(dead_code, non_snake_case, non_upper_case_globals)]
 
+use crate::entities::user;
 use sea_orm::entity::prelude::*;
+use serde::{
+	Deserialize,
+	Serialize,
+};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, DeriveEntityModel, Serialize)]
 #[sea_orm(table_name = "tokens")]
 pub struct Model
 {
@@ -24,7 +29,7 @@ pub enum Relation
 	User,
 }
 
-impl Related<crate::entities::User> for Entity
+impl Related<user::Entity> for Entity
 {
 	fn to() -> RelationDef
 	{

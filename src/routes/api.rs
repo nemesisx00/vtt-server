@@ -31,7 +31,7 @@ pub async fn generateUser() -> impl Responder
 	let mut resp = "Failed to create new User.".to_string();
 	if let Ok(db) = getDatabaseConnection().await
 	{
-		if let Ok(Some(_)) = User::find_by_id(1).one(&db).await
+		if let Ok(Some(_)) = user::Entity::find_by_id(1).one(&db).await
 		{
 			resp = "User already exists!".to_string();
 		}

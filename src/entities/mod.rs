@@ -3,5 +3,8 @@
 pub mod user;
 pub mod token;
 
-pub use user::Entity as User;
-pub use token::Entity as Token;
+pub use user::Model as User;
+pub use user::ActiveModel as UserActive;
+
+pub use token::Model as Token;
+pub use token::ActiveModel as TokenActive;

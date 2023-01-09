@@ -25,8 +25,8 @@ async fn createTable<E>(db: &DatabaseConnection, entity: E)
 
 pub async fn createAllTables(db: &DatabaseConnection) -> Result<(), DbErr>
 {
-	createTable(db, User).await;
-	createTable(db, Token).await;
+	createTable(db, user::Entity).await;
+	createTable(db, token::Entity).await;
 	
 	return Ok(());
 }
