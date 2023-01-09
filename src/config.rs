@@ -1,6 +1,7 @@
 #![allow(dead_code, non_snake_case, non_upper_case_globals)]
 
 use std::{
+	error::Error,
 	fs::File,
 	io::BufReader,
 };
@@ -11,12 +12,12 @@ use serde::{
 
 pub const ConfigPath: &str = "./config.json";
 
-pub fn loadConfig(path: &str) -> Config
+pub fn loadConfig(path: &str) -> Result<Config, Box<dyn Error>>
 {
 	let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
-	let config: Config = serde_json::from_reader(reader).unwrap();
-	return config;
+	let config: Config = serde_json::from_reader(reader)?;
+	return Ok(config);
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]

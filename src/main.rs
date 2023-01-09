@@ -22,7 +22,7 @@ use actix_web::{
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
-	let config = loadConfig(ConfigPath);
+	let config = loadConfig(ConfigPath).unwrap();
 	
 	return HttpServer::new(||
 	{
@@ -36,6 +36,7 @@ async fn main() -> std::io::Result<()>
 					.service(routes::admin::home)
 					.service(routes::admin::getFile)
 					.service(routes::admin::getInterpreter)
+					.service(routes::admin::userList)
 			)
 	})
 		.bind((config.network.ip, config.network.port))?
