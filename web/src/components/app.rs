@@ -5,6 +5,7 @@ use std::{
 	error::Error,
 };
 use dioxus::prelude::*;
+use dioxus::core::to_owned;
 use reqwest::{
 	Client,
 };
@@ -12,12 +13,6 @@ use serde::{
 	Deserialize,
 	Serialize,
 };
-
-#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-struct Users
-{
-	pub users: Vec<User>,
-}
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 struct User
@@ -34,39 +29,49 @@ async fn getUsers() -> Result<Vec<User>, Box<dyn Error>>
 	let resp = Client::new()
 		.post("http://127.0.0.1:8080/admin/user/list")
 		.form(&[
-			("username", "username"),
-			("password", "password"),
+			("token", "some unique token"),
 		])
 		.send()
 		.await?
-		.json::<Users>()
-		.await?;
+		.json::<Vec<User>>()
+		.await;
 	
-	return Ok(resp.users);
+	let mut o = vec![];
+	match resp
+	{
+		Ok(res) => o = res.to_owned(),
+		Err(e) => log::error!("Failed to retrieve Users list: {:?}", e),
+	}
+	
+	return Ok(o);
 }
 
 pub fn App(cx: Scope) -> Element
 {
 	let showManageUsers = use_state(&cx, || false);
+	let usernames = use_ref(&cx, || HashMap::<i64, String>::new());
 	
-	let usersFuture = use_future(&cx, (), |_| async move
-	{
-		getUsers()
-			.await
-	});
-	
-	let mut usernames = HashMap::<i64, String>::default();
-	if *showManageUsers.get()
-	{
-		if let Ok(users) = usersFuture.value()?
+	let manageUsersClickHandler = move |_| {
+		if !showManageUsers
 		{
-			for user in users.iter()
-			{
-				usernames.insert(user.id, user.label.to_owned());
-			}
+			to_owned![usernames];
+			cx.spawn(async move {
+				match getUsers().await
+				{
+					Ok(fetched) => {
+						usernames.write().clear();
+						for user in fetched
+						{
+							usernames.write().insert(user.id, user.label);
+						}
+					},
+					_ => log::error!("getUsers() failed!"),
+				};
+			});
 		}
-	}
-	let noUsers = usernames.len() == 0;
+		
+		showManageUsers.set(!showManageUsers);
+	};
 	
 	return cx.render(rsx!{
 		h1
@@ -76,13 +81,7 @@ pub fn App(cx: Scope) -> Element
 		hr {}
 		button
 		{
-			onclick: move |_| {
-				showManageUsers.set(!showManageUsers);
-				if *showManageUsers.get()
-				{
-					usersFuture.restart();
-				}
-			},
+			onclick: manageUsersClickHandler,
 			"Manage Users"
 		}
 		
@@ -91,16 +90,12 @@ pub fn App(cx: Scope) -> Element
 			{
 				"Manage Users!",
 				
-				usernames.iter().map(|(i, username)| rsx!(div
+				usernames.read().iter().map(|(i, username)| rsx!(div
 				{
 					key: "{i}",
+					class: "user",
 					"{username}"
-				})),
-				
-				noUsers.then(|| rsx!(div
-				{
-					"No users found!"
-				})),
+				}))
 			}
 		})
 	});

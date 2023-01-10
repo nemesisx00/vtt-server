@@ -1,3 +1,7 @@
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
 [tasks.debug]
 dependencies = [
 	"npm-install",

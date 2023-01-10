@@ -50,12 +50,11 @@ pub async fn userNew(json: String) -> impl Responder
 }
 
 #[post("/user/list")]
-pub async fn userList(json: String) -> impl Responder
+pub async fn userList(args: String) -> impl Responder
 {
-	println!("POST /admin/user/list Request received!");
+	println!("POST /admin/user/list: {}", args);
 	//TODO: if validate(json)
 	let users = allUsers().await;
-	println!("users size: {}", users.len());
-	println!("users as json: {}", serde_json::to_string(&users).unwrap());
-	return HttpResponse::Ok().body(serde_json::to_string(&users).unwrap());
+	let json = serde_json::to_string(&users).unwrap();
+	return HttpResponse::Ok().body(json);
 }
