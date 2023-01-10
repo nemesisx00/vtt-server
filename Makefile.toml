@@ -1,3 +1,10 @@
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+dependencies = [
+	{ name = "clean", path = "web/Makefile.toml" },
+]
+
 [tasks.debug]
 dependencies = [
 	"build-debug",
@@ -30,7 +37,7 @@ script = '''
 rm -rF dist
 mkdir dist
 cp -r target/admin dist # shell2batch: xcopy target\admin dist\admin /e /i
-cp config.json dist
+cp config.toml dist
 '''
 
 [tasks.bundle-debug]

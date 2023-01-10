@@ -2,32 +2,27 @@
 
 use std::{
 	error::Error,
-	fs::File,
-	io::BufReader,
+	fs,
 };
-use serde::{
-	Deserialize,
-	Serialize,
-};
+use serde::Deserialize;
+use toml;
 
-pub const ConfigPath: &str = "./config.json";
+pub const ConfigPath: &str = "./config.toml";
 
 pub fn loadConfig(path: &str) -> Result<Config, Box<dyn Error>>
 {
-	let file = File::open(path).unwrap();
-    let reader = BufReader::new(file);
-	let config: Config = serde_json::from_reader(reader)?;
+	let config = toml::from_str::<Config>(fs::read_to_string(path)?.as_str())?;
 	return Ok(config);
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Config
 {
 	pub database: ConfigDatabase,
 	pub network: ConfigNetwork,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct ConfigDatabase
 {
 	/*
@@ -39,7 +34,7 @@ pub struct ConfigDatabase
 	pub connectionString: String,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct ConfigNetwork
 {
 	pub ip: String,
