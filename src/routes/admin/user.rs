@@ -5,12 +5,17 @@ use crate::{
 	api::{
 		structs::{
 			CreateUserData,
-			CreateUserResponseData,
+			UpdateUserData,
+			ResponseData,
 		},
 	},
 	database::{
 		findAllUsers,
+		findUserById,
 		createUser,
+	},
+	entities::{
+		UserActive,
 	},
 };
 use actix_web::{
@@ -22,7 +27,11 @@ use actix_web::{
 	HttpResponse,
 	Responder,
 };
-use sea_orm::DatabaseConnection;
+use sea_orm::{
+	Set,
+	ActiveModelTrait,
+	DatabaseConnection
+};
 
 #[post("/user/list")]
 pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
@@ -30,12 +39,12 @@ pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
 	//TODO: authenticate
 	
 	let mut users = vec![];
-	match findAllUsers(&db).await
+	match findAllUsers(db.get_ref()).await
 	{
 		Ok(result) => users = result,
 		Err(e) => println!("Error retrieving all users: {}", e),
 	}
-	println!("Did we get users? {:?}", users);
+	
 	let json = serde_json::to_string(&users).unwrap();
 	
 	return HttpResponse::Ok().body(json);
@@ -46,19 +55,19 @@ pub async fn userNew(data: Form<CreateUserData>, db: Data<DatabaseConnection>) -
 {
 	//TODO: authenticate
 	
-	let mut response = CreateUserResponseData {
-		user: None,
+	let mut response = ResponseData {
 		message: format!("Invalid data! {:?}", data),
+		..Default::default()
 	};
 	
 	if !data.username.is_empty() && !data.label.is_empty()
 	{
-		response = match createUser(&db, data.username.to_owned(), data.label.to_owned()).await
+		response = match createUser(db.get_ref(), data.username.to_owned(), data.label.to_owned()).await
 		{
-			Ok(user) => CreateUserResponseData { user: Some(user), message: "User created successfully!".to_owned() },
+			Ok(user) => ResponseData { payload: Some(user), message: "User created successfully!".to_owned() },
 			Err(e) => {
 				println!("Error creating user: {}", e);
-				CreateUserResponseData { user: None, message: "Failed to create user!".to_owned() }
+				ResponseData { message: "Failed to create user!".to_owned(), ..Default::default() }
 			},
 		};
 	}
@@ -68,11 +77,49 @@ pub async fn userNew(data: Form<CreateUserData>, db: Data<DatabaseConnection>) -
 }
 
 #[post("/user/update")]
-pub async fn userUpdate() -> impl Responder
+pub async fn userUpdate(data: Form<UpdateUserData>, db: Data<DatabaseConnection>) -> impl Responder
 {
 	//TODO: authenticate
 	
-	return HttpResponse::Ok().body("");
+	let result = findUserById(db.get_ref(), data.userId.to_owned()).await;
+	
+	let response = match result
+	{
+		Ok(opt) => match opt
+		{
+			Some(user) => {
+				let mut active: UserActive = user.into();
+				
+				active.label = Set(data.label.to_owned());
+				active.avatar = Set(data.avatar.to_owned());
+				active.description = Set(data.description.to_owned());
+				
+				let updated = active.update(db.get_ref()).await.unwrap();
+				
+				ResponseData
+				{
+					payload: Some(updated.to_owned()),
+					message: format!("User '{}' updated!", updated.username.to_owned()),
+				}
+			},
+			
+			None => ResponseData
+			{
+				message: format!("No user found matching user ID '{}'!", data.userId.to_owned()),
+				..Default::default()
+			},
+		},
+		
+		Err(e) => ResponseData
+		{
+			message: format!("Error updating user! {}", e),
+			..Default::default()
+		},
+	};
+	
+	//let user: UserActive 
+	let json = serde_json::to_string(&response).unwrap();
+	return HttpResponse::Ok().body(json);
 }
 
 #[cfg(test)]
@@ -81,7 +128,8 @@ mod tests
 	use crate::{
 		api::structs::{
 			CreateUserData,
-			CreateUserResponseData,
+			ResponseData,
+			UpdateUserData,
 		},
 		database::{
 			createTestDatabase,
@@ -150,8 +198,8 @@ mod tests
 			.set_form(newData)
 			.to_request();
 		
-		let resp: CreateUserResponseData = test::call_and_read_body_json(&app, req).await;
-		let user = resp.user.unwrap();
+		let resp: ResponseData<User> = test::call_and_read_body_json(&app, req).await;
+		let user = resp.payload.unwrap();
 		
 		assert_eq!(user.id, 1);
 		assert_eq!(user.username, username);
@@ -159,5 +207,43 @@ mod tests
 		
 		let users = findAllUsers(&db).await.unwrap();
 		assert_eq!(user, users[0]);
+	}
+	
+	#[actix_web::test]
+	async fn test_userUpdate()
+	{
+		let db = createTestDatabase().await.unwrap();
+		let app = test::init_service(
+			App::new()
+				.app_data(Data::new(db.to_owned()))
+				.service(
+					web::scope("/admin")
+						.service(routes::admin::user::userUpdate)
+				)
+		).await;
+		
+		let username1 = "username".to_owned();
+		let label = "label".to_owned();
+		let label2 = "Something different".to_owned();
+		
+		let user = createUser(&db, username1.to_owned(), label.to_owned()).await.unwrap();
+		
+		let data = UpdateUserData
+		{
+			userId: user.id.to_owned(),
+			label: label2.to_owned(),
+			..Default::default()
+		};
+		
+		let req = test::TestRequest::post()
+			.uri("/admin/user/update")
+			.set_form(data)
+			.to_request();
+		
+		let resp: ResponseData<User> = test::call_and_read_body_json(&app, req).await;
+		let updated = resp.payload.unwrap();
+		
+		assert_ne!(updated, user);
+		assert_eq!(updated.label, label2);
 	}
 }

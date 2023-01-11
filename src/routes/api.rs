@@ -28,15 +28,15 @@ pub async fn root() -> impl Responder
 #[post("/login")]
 pub async fn login(data: Form<LoginData>, db: Data<DatabaseConnection>) -> impl Responder
 {
-	let mut resp = LoginResponseData
+	let mut resp = ResponseData
 	{
 		message: "No User found!".to_owned(),
 		..Default::default()
 	};
 	
-	if let Ok(Some(u)) = findUserById(&db, data.userId).await
+	if let Ok(Some(u)) = findUserById(db.get_ref(), data.userId).await
 	{
-		resp.userId = Some(u.id);
+		resp.payload = Some(u.id);
 		resp.message = format!("Hello {}!", u.label);
 	}
 	
@@ -50,7 +50,7 @@ mod tests
 	use crate::{
 		api::structs::{
 			LoginData,
-			LoginResponseData,
+			ResponseData,
 		},
 		database::{
 			createTestDatabase,
@@ -88,8 +88,8 @@ mod tests
 			.set_form(data)
 			.to_request();
 		
-		let resp: LoginResponseData = test::call_and_read_body_json(&app, req).await;
-		assert_eq!(resp.userId, None);
+		let resp: ResponseData<i64> = test::call_and_read_body_json(&app, req).await;
+		assert_eq!(resp.payload, None);
 		assert_eq!(resp.message, "No User found!".to_owned());
 	}
 	
@@ -114,8 +114,8 @@ mod tests
 			.set_form(data)
 			.to_request();
 		
-		let resp: LoginResponseData = test::call_and_read_body_json(&app, req).await;
-		assert_eq!(resp.userId, Some(user.id));
+		let resp: ResponseData<i64> = test::call_and_read_body_json(&app, req).await;
+		assert_eq!(resp.payload, Some(user.id));
 		assert_eq!(resp.message, format!("Hello {}!", user.label))
 	}
 }
