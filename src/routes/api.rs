@@ -34,13 +34,10 @@ pub async fn login(data: Form<LoginData>, db: Data<DatabaseConnection>) -> impl 
 		..Default::default()
 	};
 	
-	if let Some(userId) = data.userId
+	if let Ok(Some(u)) = findUserById(&db, data.userId).await
 	{
-		if let Ok(Some(u)) = findUserById(&db, userId).await
-		{
-			resp.userId = Some(u.id);
-			resp.message = format!("Hello {}!", u.label);
-		}
+		resp.userId = Some(u.id);
+		resp.message = format!("Hello {}!", u.label);
 	}
 	
 	let respJson = serde_json::to_string(&resp).unwrap();
@@ -73,30 +70,6 @@ mod tests
 	};
 	
 	#[actix_web::test]
-	async fn test_login_empty()
-	{
-		let uri = "/login";
-		
-		let db = createTestDatabase().await.unwrap();
-		let app = test::init_service(
-			App::new()
-				.app_data(Data::new(db.to_owned()))
-				.service(routes::api::login)
-		).await;
-		
-		// No userId provided!
-		let data = LoginData { userId: None };
-		let req = TestRequest::post()
-			.uri(uri)
-			.set_form(data)
-			.to_request();
-		
-		let resp: LoginResponseData = test::call_and_read_body_json(&app, req).await;
-		assert_eq!(resp.userId, None);
-		assert_eq!(resp.message, "No User found!".to_owned());
-	}
-	
-	#[actix_web::test]
 	async fn test_login_invalid()
 	{
 		let uri = "/login";
@@ -109,7 +82,7 @@ mod tests
 				.service(routes::api::login)
 		).await;
 		
-		let data = LoginData { userId: Some(expectedId) };
+		let data = LoginData { userId: expectedId };
 		let req = TestRequest::post()
 			.uri(uri)
 			.set_form(data)
@@ -135,7 +108,7 @@ mod tests
 		).await;
 		
 		let user = createUser(&db, username.to_owned(), label.to_owned()).await.unwrap();
-		let data = LoginData { userId: Some(user.id) };
+		let data = LoginData { userId: user.id };
 		let req = TestRequest::post()
 			.uri(uri)
 			.set_form(data)

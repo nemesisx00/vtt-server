@@ -12,7 +12,7 @@ use serde::{
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct LoginData
 {
-	pub userId: Option<i64>,
+	pub userId: i64,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
