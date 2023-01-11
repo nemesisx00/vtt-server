@@ -38,8 +38,7 @@ async fn main() -> std::io::Result<()>
 	{
 		App::new()
 			.app_data(Data::new(db.to_owned()))
-			.service(routes::api::echo)
-			.service(routes::api::home)
+			.service(routes::api::root)
 			.service(routes::api::login)
 			.service(
 				web::scope("/admin")
