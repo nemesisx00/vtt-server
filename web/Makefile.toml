@@ -16,6 +16,10 @@ dependencies = [
 	"trunk-release",
 ]
 
+[tasks.test]
+command = "cargo"
+args = ["test"]
+
 [tasks.npm-install]
 script_runner = "@shell"
 script = 'npm install'

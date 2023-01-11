@@ -1,4 +1,5 @@
-#![allow(dead_code, non_snake_case, non_upper_case_globals)]
+#![allow(non_snake_case, non_upper_case_globals)]
+#![cfg_attr(debug_assertions, allow(dead_code))]
 
 use crate::entities::*;
 use sea_orm::{
@@ -29,4 +30,34 @@ pub async fn createAllTables(db: &DatabaseConnection) -> Result<(), DbErr>
 	createTable(db, token::Entity).await;
 	
 	return Ok(());
+}
+
+#[cfg(test)]
+mod tests
+{
+	#[allow(unused_imports)]
+	use super::*;
+	use crate::database::createTestDatabase;
+	use sea_orm::{
+		JsonValue,
+		Statement,
+		DbBackend,
+		FromQueryResult,
+	};
+	
+	#[actix_web::test]
+	async fn test_createAllTables()
+	{
+		let db = createTestDatabase().await.unwrap();
+		let rows: Vec<JsonValue> = JsonValue::find_by_statement(Statement::from_sql_and_values(
+			DbBackend::Sqlite,
+			r#"SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"#,
+			vec![],
+		))
+		.all(&db)
+		.await
+		.unwrap();
+		
+		assert!(rows.len() > 0);
+	}
 }

@@ -1,9 +1,11 @@
-#![allow(dead_code, non_snake_case, non_upper_case_globals)]
+#![allow(non_snake_case, non_upper_case_globals)]
+#![cfg_attr(debug_assertions, allow(dead_code))]
 
 mod api;
 mod config;
 mod database;
 mod entities;
+mod error;
 mod migrations;
 mod routes;
 
@@ -12,6 +14,8 @@ use crate::{
 		loadConfig,
 		ConfigPath,
 	},
+	database::getDatabaseConnection,
+	migrations::createAllTables,
 };
 use actix_web::{
 	web,
@@ -24,19 +28,21 @@ async fn main() -> std::io::Result<()>
 {
 	let config = loadConfig(ConfigPath).unwrap();
 	
+	let db = getDatabaseConnection().await.expect("Failed to connect to the database!");
+	createAllTables(&db).await.expect("Failed to run initial database migrations!");
+	
 	return HttpServer::new(||
 	{
 		App::new()
 			.service(routes::api::echo)
-			.service(routes::api::generateUser)
 			.service(routes::api::home)
 			.service(routes::api::login)
 			.service(
 				web::scope("/admin")
-					.service(routes::admin::home)
-					.service(routes::admin::getFile)
-					.service(routes::admin::getInterpreter)
-					.service(routes::admin::userList)
+					.service(routes::admin::core::home)
+					.service(routes::admin::core::web)
+					.service(routes::admin::user::userList)
+					.service(routes::admin::user::userNew)
 			)
 	})
 		.bind((config.network.ip, config.network.port))?

@@ -17,6 +17,13 @@ dependencies = [
 	"bundle-release",
 ]
 
+[tasks.test]
+command = "cargo"
+args = ["test"]
+dependencies = [
+	{ name = "test", path = "web/Makefile.toml" }
+]
+
 [tasks.build-debug]
 command = "cargo"
 args = ["build"]

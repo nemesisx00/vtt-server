@@ -1,4 +1,5 @@
-#![allow(dead_code, non_snake_case, non_upper_case_globals)]
+#![allow(non_snake_case, non_upper_case_globals)]
+#![cfg_attr(debug_assertions, allow(dead_code))]
 
 use crate::entities::token;
 use sea_orm::entity::prelude::*;
@@ -13,8 +14,8 @@ pub struct Model
 {
 	#[sea_orm(primary_key)]
 	pub id: i64,
+	pub username: String,
 	pub label: String,
-	pub name: Option<String>,
 	pub avatar: Option<String>,
 	pub description: Option<String>,
 }
