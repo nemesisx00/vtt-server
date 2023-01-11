@@ -4,7 +4,7 @@
 use crate::{
 	api::{
 		structs::{
-			CreateUserRequestData,
+			CreateUserData,
 			CreateUserResponseData,
 		},
 	},
@@ -42,7 +42,7 @@ pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
 }
 
 #[post("/user/new")]
-pub async fn userNew(data: Form<CreateUserRequestData>, db: Data<DatabaseConnection>) -> impl Responder
+pub async fn userNew(data: Form<CreateUserData>, db: Data<DatabaseConnection>) -> impl Responder
 {
 	//TODO: authenticate
 	
@@ -80,7 +80,7 @@ mod tests
 {
 	use crate::{
 		api::structs::{
-			CreateUserRequestData,
+			CreateUserData,
 			CreateUserResponseData,
 		},
 		database::{
@@ -139,7 +139,7 @@ mod tests
 		let username = "username".to_owned();
 		let label = "label".to_owned();
 		
-		let newData = CreateUserRequestData
+		let newData = CreateUserData
 		{
 			username: username.to_owned(),
 			label: label.to_owned(),
