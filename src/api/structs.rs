@@ -12,19 +12,19 @@ use serde::{
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct LoginData
 {
-	pub UserId: Option<i64>,
+	pub userId: Option<i64>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct LoginResponseData
 {
-	pub UserId: Option<i64>,
-	pub Message: String,
+	pub userId: Option<i64>,
+	pub message: String,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct CreateUserResponse
 {
-	pub User: Option<User>,
-	pub Message: String,
+	pub user: Option<User>,
+	pub message: String,
 }
