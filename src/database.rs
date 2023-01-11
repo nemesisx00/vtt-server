@@ -104,13 +104,13 @@ mod tests
 		
 		let db = createTestDatabase().await.unwrap();
 		let user = createUser(&db, username.to_owned(), label.to_owned()).await.unwrap();
+		assert_eq!(user.id, 1);
 		assert_eq!(user.username, username);
 		assert_eq!(user.label, label);
 		
 		let users = findAllUsers(&db).await.unwrap();
 		assert_eq!(users.len(), 1);
-		assert_eq!(users[0].username, username);
-		assert_eq!(users[0].label, label);
+		assert_eq!(users[0], user);
 	}
 	
 	#[actix_web::test]
