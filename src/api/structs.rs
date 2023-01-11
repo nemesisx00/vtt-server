@@ -23,7 +23,14 @@ pub struct LoginResponseData
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct CreateUserResponse
+pub struct CreateUserRequestData
+{
+	pub username: String,
+	pub label: String,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct CreateUserResponseData
 {
 	pub user: Option<User>,
 	pub message: String,

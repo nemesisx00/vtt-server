@@ -3,8 +3,10 @@
 
 use crate::{
 	api::{
-		args::parseArgs,
-		structs::CreateUserResponse,
+		structs::{
+			CreateUserRequestData,
+			CreateUserResponseData,
+		},
 	},
 	database::{
 		findAllUsers,
@@ -13,19 +15,19 @@ use crate::{
 };
 use actix_web::{
 	post,
-	web::Data,
+	web::{
+		Data,
+		Form,
+	},
 	HttpResponse,
 	Responder,
 };
 use sea_orm::DatabaseConnection;
 
 #[post("/user/list")]
-pub async fn userList(args: String, db: Data<DatabaseConnection>) -> impl Responder
+pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
 {
-	//println!("POST /admin/user/list: {}", args);
-	//TODO: if validate(args)
-	
-	let _data = parseArgs(args);
+	//TODO: authenticate
 	
 	let mut users = vec![];
 	match findAllUsers(&db).await
@@ -40,23 +42,23 @@ pub async fn userList(args: String, db: Data<DatabaseConnection>) -> impl Respon
 }
 
 #[post("/user/new")]
-pub async fn userNew(args: String, db: Data<DatabaseConnection>) -> impl Responder
+pub async fn userNew(data: Form<CreateUserRequestData>, db: Data<DatabaseConnection>) -> impl Responder
 {
-	//TODO: if validate(args)
-	let data = parseArgs(args.to_owned());
-	let mut response = CreateUserResponse {
+	//TODO: authenticate
+	
+	let mut response = CreateUserResponseData {
 		user: None,
-		message: format!("Invalid data! {}", args),
+		message: format!("Invalid data! {:?}", data),
 	};
 	
-	if data.contains_key("username") && !data["username"].is_empty() && data.contains_key("label") && !data["label"].is_empty()
+	if !data.username.is_empty() && !data.label.is_empty()
 	{
-		response = match createUser(&db, data["username"].to_owned(), data["label"].to_owned()).await
+		response = match createUser(&db, data.username.to_owned(), data.label.to_owned()).await
 		{
-			Ok(user) => CreateUserResponse { user: Some(user), message: "User created successfully!".to_owned() },
+			Ok(user) => CreateUserResponseData { user: Some(user), message: "User created successfully!".to_owned() },
 			Err(e) => {
 				println!("Error creating user: {}", e);
-				CreateUserResponse { user: None, message: "Failed to create user!".to_owned() }
+				CreateUserResponseData { user: None, message: "Failed to create user!".to_owned() }
 			},
 		};
 	}
@@ -65,11 +67,22 @@ pub async fn userNew(args: String, db: Data<DatabaseConnection>) -> impl Respond
 	return HttpResponse::Ok().body(json);
 }
 
+#[post("/user/update")]
+pub async fn userUpdate() -> impl Responder
+{
+	//TODO: authenticate
+	
+	return HttpResponse::Ok().body("");
+}
+
 #[cfg(test)]
 mod tests
 {
 	use crate::{
-		api::structs::CreateUserResponse,
+		api::structs::{
+			CreateUserRequestData,
+			CreateUserResponseData,
+		},
 		database::{
 			createTestDatabase,
 			createUser,
@@ -86,14 +99,6 @@ mod tests
 		},
 		App,
 	};
-	use serde::Serialize;
-	
-	#[derive(Clone, Debug, Serialize)]
-	struct UserNewData
-	{
-		username: String,
-		label: String,
-	}
 	
 	#[actix_web::test]
 	async fn test_userList()
@@ -134,7 +139,7 @@ mod tests
 		let username = "username".to_owned();
 		let label = "label".to_owned();
 		
-		let newData = UserNewData
+		let newData = CreateUserRequestData
 		{
 			username: username.to_owned(),
 			label: label.to_owned(),
@@ -145,7 +150,7 @@ mod tests
 			.set_form(newData)
 			.to_request();
 		
-		let resp: CreateUserResponse = test::call_and_read_body_json(&app, req).await;
+		let resp: CreateUserResponseData = test::call_and_read_body_json(&app, req).await;
 		let user = resp.user.unwrap();
 		
 		assert_eq!(user.id, 1);
