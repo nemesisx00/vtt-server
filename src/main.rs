@@ -18,7 +18,10 @@ use crate::{
 	migrations::createAllTables,
 };
 use actix_web::{
-	web,
+	web::{
+		self,
+		Data,
+	},
 	App,
 	HttpServer,
 };
@@ -31,9 +34,10 @@ async fn main() -> std::io::Result<()>
 	let db = getDatabaseConnection().await.expect("Failed to connect to the database!");
 	createAllTables(&db).await.expect("Failed to run initial database migrations!");
 	
-	return HttpServer::new(||
+	return HttpServer::new(move ||
 	{
 		App::new()
+			.app_data(Data::new(db.to_owned()))
 			.service(routes::api::echo)
 			.service(routes::api::home)
 			.service(routes::api::login)
