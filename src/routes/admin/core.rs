@@ -17,8 +17,7 @@ pub async fn home() -> Result<NamedFile>
 {
 	//TODO: if validate(json)
 	let path = Path::new("./admin/index.html");
-	let file = NamedFile::open(path)?;
-	return Ok(file);
+	return Ok(NamedFile::open(path)?);
 }
 
 #[get("/{filename:.*(.css|.js|.wasm)}")]
