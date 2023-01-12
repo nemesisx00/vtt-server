@@ -43,11 +43,17 @@ pub async fn userDelete(data: Form<DeleteUserData>, db: Data<DatabaseConnection>
 			Some(user) => match user.delete(db.get_ref()).await
 			{
 				Ok(result) => ResponseData::<bool> { payload: Some(true), message: format!("Deleted {} users!", result.rows_affected) },
-				Err(e) => ResponseData::<bool> { payload: Some(false), message: format!("{:?}", e) },
+				Err(e) => {
+					println!("Error deleting user {}: {:?}", data.userId, e);
+					ResponseData::<bool> { payload: Some(false), message: "Failed to delete user!".to_owned() }
+				}
 			},
-			None => ResponseData::<bool> { payload: Some(true), message: "No users to delete!".to_owned() }
+			None => ResponseData::<bool> { payload: Some(true), message: "No user to delete!".to_owned() }
 		},
-		Err(e) => ResponseData::<bool> { payload: Some(false), message: format!("{:?}", e) }
+		Err(e) => {
+			println!("Error finding user {}: {:?}", data.userId, e);
+			ResponseData::<bool> { payload: Some(false), message: "Failed to find user to delete!".to_owned() }
+		}
 	};
 	
 	let json = serde_json::to_string(&response).unwrap();
@@ -165,10 +171,7 @@ mod tests
 			User,
 			UserActive,
 		},
-		routes::{
-			self,
-			admin::user::*,
-		},
+		routes::admin::user::*,
 	};
 	use actix_web::{
 		test,
@@ -197,6 +200,20 @@ mod tests
 		};
 	}
 	
+	macro_rules! createRequest {
+		($uri:expr) => {
+			test::TestRequest::post()
+				.uri($uri)
+				.to_request()
+		};
+		($uri:expr, $data:ident) => {
+			test::TestRequest::post()
+				.uri($uri)
+				.set_form($data)
+				.to_request()
+		}
+	}
+	
 	#[actix_web::test]
 	async fn test_userDelete_notFound()
 	{
@@ -206,11 +223,7 @@ mod tests
 		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 0);
 		
 		let data = DeleteUserData { userId: 1 };
-		let req = test::TestRequest::post()
-			.uri("/admin/user/delete")
-			.set_form(data)
-			.to_request();
-		
+		let req = createRequest!("/admin/user/delete", data);
 		let resp: ResponseData<bool> = test::call_and_read_body_json(&app, req).await;
 		let wasDeleted = resp.payload.unwrap();
 		assert!(wasDeleted);
@@ -233,11 +246,7 @@ mod tests
 		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 1);
 		
 		let data = DeleteUserData { userId: user.id };
-		let req = test::TestRequest::post()
-			.uri("/admin/user/delete")
-			.set_form(data)
-			.to_request();
-		
+		let req = createRequest!("/admin/user/delete", data);
 		let resp: ResponseData<bool> = test::call_and_read_body_json(&app, req).await;
 		let wasDeleted = resp.payload.unwrap();
 		assert!(wasDeleted);
@@ -259,9 +268,7 @@ mod tests
 		};
 		
 		let user = active.insert(&db).await.unwrap();
-		
-		let req = test::TestRequest::post().uri("/admin/user/list").to_request();
-		
+		let req = createRequest!("/admin/user/list");
 		let resp: Vec<User> = test::call_and_read_body_json(&app, req).await;
 		assert_eq!(resp.len(), 1);
 		assert_eq!(resp[0], user);
@@ -278,17 +285,13 @@ mod tests
 		let username = "username".to_owned();
 		let label = "label".to_owned();
 		
-		let newData = CreateUserData
+		let data = CreateUserData
 		{
 			username: username.to_owned(),
 			label: label.to_owned(),
 		};
 		
-		let req = test::TestRequest::post()
-			.uri("/admin/user/new")
-			.set_form(newData)
-			.to_request();
-		
+		let req = createRequest!("/admin/user/new", data);
 		let resp: ResponseData<User> = test::call_and_read_body_json(&app, req).await;
 		let user = resp.payload.unwrap();
 		
@@ -330,11 +333,7 @@ mod tests
 			..Default::default()
 		};
 		
-		let req = test::TestRequest::post()
-			.uri("/admin/user/update")
-			.set_form(data)
-			.to_request();
-		
+		let req = createRequest!("/admin/user/update", data);
 		let resp: ResponseData<User> = test::call_and_read_body_json(&app, req).await;
 		let updated = resp.payload.unwrap();
 		
