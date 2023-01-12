@@ -21,6 +21,12 @@ pub struct CreateUserData
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct DeleteUserData
+{
+	pub userId: i64,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct LoginData
 {
 	pub userId: i64,

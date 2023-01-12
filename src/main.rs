@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()>
 				web::scope("/admin")
 					.service(routes::admin::core::home)
 					.service(routes::admin::core::web)
+					.service(routes::admin::user::userDelete)
 					.service(routes::admin::user::userList)
 					.service(routes::admin::user::userNew)
 					.service(routes::admin::user::userUpdate)

@@ -5,19 +5,18 @@ use crate::{
 	api::{
 		structs::{
 			CreateUserData,
+			DeleteUserData,
 			UpdateUserData,
 			ResponseData,
 		},
 	},
-	database::{
-		findAllUsers,
-		findUserById,
-		createUser,
-	},
 	entities::{
+		user,
+		User,
 		UserActive,
 	},
 };
+use std::error::Error;
 use actix_web::{
 	post,
 	web::{
@@ -30,8 +29,30 @@ use actix_web::{
 use sea_orm::{
 	Set,
 	ActiveModelTrait,
-	DatabaseConnection
+	DatabaseConnection,
+	EntityTrait, ModelTrait,
 };
+
+#[post("/user/delete")]
+pub async fn userDelete(data: Form<DeleteUserData>, db: Data<DatabaseConnection>) -> impl Responder
+{
+	let response = match user::Entity::find_by_id(data.userId).one(db.get_ref()).await
+	{
+		Ok(opt) => match opt
+		{
+			Some(user) => match user.delete(db.get_ref()).await
+			{
+				Ok(result) => ResponseData::<bool> { payload: Some(true), message: format!("Deleted {} users!", result.rows_affected) },
+				Err(e) => ResponseData::<bool> { payload: Some(false), message: format!("{:?}", e) },
+			},
+			None => ResponseData::<bool> { payload: Some(true), message: "No users to delete!".to_owned() }
+		},
+		Err(e) => ResponseData::<bool> { payload: Some(false), message: format!("{:?}", e) }
+	};
+	
+	let json = serde_json::to_string(&response).unwrap();
+	return HttpResponse::Ok().body(json);
+}
 
 #[post("/user/list")]
 pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
@@ -39,14 +60,13 @@ pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
 	//TODO: authenticate
 	
 	let mut users = vec![];
-	match findAllUsers(db.get_ref()).await
+	match user::Entity::find().all(db.get_ref()).await
 	{
 		Ok(result) => users = result,
 		Err(e) => println!("Error retrieving all users: {}", e),
 	}
 	
 	let json = serde_json::to_string(&users).unwrap();
-	
 	return HttpResponse::Ok().body(json);
 }
 
@@ -62,7 +82,14 @@ pub async fn userNew(data: Form<CreateUserData>, db: Data<DatabaseConnection>) -
 	
 	if !data.username.is_empty() && !data.label.is_empty()
 	{
-		response = match createUser(db.get_ref(), data.username.to_owned(), data.label.to_owned()).await
+		let active = UserActive
+		{
+			username: Set(data.username.to_owned()),
+			label: Set(data.label.to_owned()),
+			..Default::default()
+		};
+		
+		response = match active.insert(db.get_ref()).await
 		{
 			Ok(user) => ResponseData { payload: Some(user), message: "User created successfully!".to_owned() },
 			Err(e) => {
@@ -76,55 +103,45 @@ pub async fn userNew(data: Form<CreateUserData>, db: Data<DatabaseConnection>) -
 	return HttpResponse::Ok().body(json);
 }
 
+async fn doUserUpdate(user: User, data: &UpdateUserData, db: &DatabaseConnection) -> Result<User, Box<dyn Error>>
+{
+	let mut active: UserActive = user.into();
+	active.label = Set(data.label.to_owned());
+	
+	match data.avatar.is_empty()
+	{
+		true => active.avatar = Set(None),
+		false => active.avatar = Set(Some(data.avatar.to_owned()))
+	}
+	
+	match data.avatar.is_empty()
+	{
+		true => active.description = Set(None),
+		false => active.description = Set(Some(data.description.to_owned()))
+	}
+	
+	let updated = active.update(db).await?;
+	return Ok(updated);
+}
+
 #[post("/user/update")]
 pub async fn userUpdate(data: Form<UpdateUserData>, db: Data<DatabaseConnection>) -> impl Responder
 {
 	//TODO: authenticate
 	
-	let result = findUserById(db.get_ref(), data.userId.to_owned()).await;
+	let result = user::Entity::find_by_id(data.userId).one(db.get_ref()).await;
 	
 	let response = match result
 	{
 		Ok(opt) => match opt
 		{
 			Some(user) => {
-				let mut active: UserActive = user.into();
-				
-				active.label = Set(data.label.to_owned());
-				
-				match data.avatar.is_empty()
-				{
-					true => active.avatar = Set(None),
-					false => active.avatar = Set(Some(data.avatar.to_owned()))
-				}
-				
-				match data.avatar.is_empty()
-				{
-					true => active.description = Set(None),
-					false => active.description = Set(Some(data.description.to_owned()))
-				}
-				
-				let updated = active.update(db.get_ref()).await.unwrap();
-				
-				ResponseData
-				{
-					payload: Some(updated.to_owned()),
-					message: format!("User '{}' updated!", updated.username.to_owned()),
-				}
+				let updated = doUserUpdate(user, &data, db.get_ref()).await.unwrap();
+				ResponseData { payload: Some(updated.to_owned()), message: format!("User '{}' updated!", updated.username.to_owned()) }
 			},
-			
-			None => ResponseData
-			{
-				message: format!("No user found matching user ID '{}'!", data.userId.to_owned()),
-				..Default::default()
-			},
+			None => ResponseData { message: format!("No user found matching user ID '{}'!", data.userId.to_owned()), ..Default::default() },
 		},
-		
-		Err(e) => ResponseData
-		{
-			message: format!("Error updating user! {}", e),
-			..Default::default()
-		},
+		Err(e) => ResponseData { message: format!("Error updating user! {}", e), ..Default::default() },
 	};
 	
 	//let user: UserActive 
@@ -138,16 +155,20 @@ mod tests
 	use crate::{
 		api::structs::{
 			CreateUserData,
+			DeleteUserData,
 			ResponseData,
 			UpdateUserData,
 		},
-		database::{
-			createTestDatabase,
-			createUser,
-			findAllUsers,
+		database::tests::createTestDatabase,
+		entities::{
+			user,
+			User,
+			UserActive,
 		},
-		entities::User,
-		routes,
+		routes::{
+			self,
+			admin::user::*,
+		},
 	};
 	use actix_web::{
 		test,
@@ -157,21 +178,87 @@ mod tests
 		},
 		App,
 	};
+	use sea_orm::{
+		ActiveModelTrait,
+		EntityTrait,
+		Set,
+	};
+	
+	macro_rules! createApp {
+		($db:ident, $service:ident) => {
+			test::init_service(
+				App::new()
+					.app_data(Data::new($db.to_owned()))
+					.service(
+						web::scope("/admin")
+							.service($service)
+					)
+			).await
+		};
+	}
+	
+	#[actix_web::test]
+	async fn test_userDelete_notFound()
+	{
+		let db = createTestDatabase().await.unwrap();
+		let app = createApp!(db, userDelete);
+		
+		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 0);
+		
+		let data = DeleteUserData { userId: 1 };
+		let req = test::TestRequest::post()
+			.uri("/admin/user/delete")
+			.set_form(data)
+			.to_request();
+		
+		let resp: ResponseData<bool> = test::call_and_read_body_json(&app, req).await;
+		let wasDeleted = resp.payload.unwrap();
+		assert!(wasDeleted);
+	}
+	
+	#[actix_web::test]
+	async fn test_userDelete_found()
+	{
+		let db = createTestDatabase().await.unwrap();
+		let app = createApp!(db, userDelete);
+		
+		let active = UserActive
+		{
+			username: Set("username".to_owned()),
+			label: Set("label".to_owned()),
+			..Default::default()
+		};
+		let user = active.insert(&db).await.unwrap();
+		
+		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 1);
+		
+		let data = DeleteUserData { userId: user.id };
+		let req = test::TestRequest::post()
+			.uri("/admin/user/delete")
+			.set_form(data)
+			.to_request();
+		
+		let resp: ResponseData<bool> = test::call_and_read_body_json(&app, req).await;
+		let wasDeleted = resp.payload.unwrap();
+		assert!(wasDeleted);
+		
+		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 0);
+	}
 	
 	#[actix_web::test]
 	async fn test_userList()
 	{
 		let db = createTestDatabase().await.unwrap();
-		let user = createUser(&db, "username".to_owned(), "label".to_owned()).await.unwrap();
+		let app = createApp!(db, userList);
 		
-		let app = test::init_service(
-			App::new()
-				.app_data(Data::new(db.to_owned()))
-				.service(
-					web::scope("/admin")
-						.service(routes::admin::user::userList)
-			)
-		).await;
+		let active = UserActive
+		{
+			username: Set("username".to_owned()),
+			label: Set("label".to_owned()),
+			..Default::default()
+		};
+		
+		let user = active.insert(&db).await.unwrap();
 		
 		let req = test::TestRequest::post().uri("/admin/user/list").to_request();
 		
@@ -184,15 +271,9 @@ mod tests
 	async fn test_userNew()
 	{
 		let db = createTestDatabase().await.unwrap();
+		let app = createApp!(db, userNew);
 		
-		let app = test::init_service(
-			App::new()
-				.app_data(Data::new(db.to_owned()))
-				.service(
-					web::scope("/admin")
-						.service(routes::admin::user::userNew)
-				)
-		).await;
+		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 0);
 		
 		let username = "username".to_owned();
 		let label = "label".to_owned();
@@ -215,7 +296,7 @@ mod tests
 		assert_eq!(user.username, username);
 		assert_eq!(user.label, label);
 		
-		let users = findAllUsers(&db).await.unwrap();
+		let users = user::Entity::find().all(&db).await.unwrap();
 		assert_eq!(user, users[0]);
 	}
 	
@@ -223,20 +304,24 @@ mod tests
 	async fn test_userUpdate()
 	{
 		let db = createTestDatabase().await.unwrap();
-		let app = test::init_service(
-			App::new()
-				.app_data(Data::new(db.to_owned()))
-				.service(
-					web::scope("/admin")
-						.service(routes::admin::user::userUpdate)
-				)
-		).await;
+		let app = createApp!(db, userUpdate);
 		
-		let username1 = "username".to_owned();
+		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 0);
+		
+		let username = "username".to_owned();
 		let label = "label".to_owned();
 		let label2 = "Something different".to_owned();
 		
-		let user = createUser(&db, username1.to_owned(), label.to_owned()).await.unwrap();
+		let active = UserActive
+		{
+			username: Set(username.to_owned()),
+			label: Set(label.to_owned()),
+			..Default::default()
+		};
+		
+		let user = active.insert(&db).await.unwrap();
+		
+		assert_eq!(user::Entity::find().all(&db).await.unwrap().len(), 1);
 		
 		let data = UpdateUserData
 		{
