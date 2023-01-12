@@ -3,8 +3,8 @@
 
 use crate::{
 	api::structs::*,
-	database::{
-		findUserById,
+	entities::{
+		user,
 	},
 };
 use actix_web::{
@@ -17,7 +17,10 @@ use actix_web::{
 	HttpResponse,
 	Responder,
 };
-use sea_orm::DatabaseConnection;
+use sea_orm::{
+	DatabaseConnection,
+	EntityTrait,
+};
 
 #[get("/")]
 pub async fn root() -> impl Responder
@@ -34,7 +37,7 @@ pub async fn login(data: Form<LoginData>, db: Data<DatabaseConnection>) -> impl 
 		..Default::default()
 	};
 	
-	if let Ok(Some(u)) = findUserById(db.get_ref(), data.userId).await
+	if let Ok(Some(u)) = user::Entity::find_by_id(data.userId).one(db.get_ref()).await
 	{
 		resp.payload = Some(u.id);
 		resp.message = format!("Hello {}!", u.label);
@@ -52,10 +55,8 @@ mod tests
 			LoginData,
 			ResponseData,
 		},
-		database::{
-			createTestDatabase,
-			createUser,
-		},
+		database::tests::createTestDatabase,
+		entities::UserActive,
 		routes,
 	};
 	use actix_web::{
@@ -67,6 +68,10 @@ mod tests
 			Data,
 		},
 		App,
+	};
+	use sea_orm::{
+		ActiveModelTrait,
+		Set,
 	};
 	
 	#[actix_web::test]
@@ -107,7 +112,14 @@ mod tests
 				.service(routes::api::login)
 		).await;
 		
-		let user = createUser(&db, username.to_owned(), label.to_owned()).await.unwrap();
+		let active = UserActive
+		{
+			username: Set(username.to_owned()),
+			label: Set(label.to_owned()),
+			..Default::default()
+		};
+		
+		let user = active.insert(&db).await.unwrap();
 		let data = LoginData { userId: user.id };
 		let req = TestRequest::post()
 			.uri(uri)

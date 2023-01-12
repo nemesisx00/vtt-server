@@ -37,7 +37,7 @@ mod tests
 {
 	#[allow(unused_imports)]
 	use super::*;
-	use crate::database::createTestDatabase;
+	use crate::database::tests::createTestDatabase;
 	use sea_orm::{
 		JsonValue,
 		Statement,
