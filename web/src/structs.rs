@@ -15,3 +15,10 @@ pub struct User
 	pub avatar: Option<String>,
 	pub description: Option<String>,
 }
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
+pub struct ResponseData<T>
+{
+	pub payload: Option<T>,
+	pub message: String,
+}

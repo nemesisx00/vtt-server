@@ -46,6 +46,7 @@ async fn main() -> std::io::Result<()>
 					.service(routes::admin::core::web)
 					.service(routes::admin::user::userList)
 					.service(routes::admin::user::userNew)
+					.service(routes::admin::user::userUpdate)
 			)
 	})
 		.bind((config.network.ip, config.network.port))?

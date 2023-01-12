@@ -31,6 +31,6 @@ pub struct UpdateUserData
 {
 	pub userId: i64,
 	pub label: String,
-	pub avatar: Option<String>,
-	pub description: Option<String>,
+	pub avatar: String,
+	pub description: String,
 }

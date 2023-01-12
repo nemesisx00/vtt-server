@@ -5,3 +5,4 @@ mod manage;
 mod modify;
 
 pub use manage::ManageUsers as Manage;
+pub use modify::ModifyUser as Modify;

@@ -91,8 +91,18 @@ pub async fn userUpdate(data: Form<UpdateUserData>, db: Data<DatabaseConnection>
 				let mut active: UserActive = user.into();
 				
 				active.label = Set(data.label.to_owned());
-				active.avatar = Set(data.avatar.to_owned());
-				active.description = Set(data.description.to_owned());
+				
+				match data.avatar.is_empty()
+				{
+					true => active.avatar = Set(None),
+					false => active.avatar = Set(Some(data.avatar.to_owned()))
+				}
+				
+				match data.avatar.is_empty()
+				{
+					true => active.description = Set(None),
+					false => active.description = Set(Some(data.description.to_owned()))
+				}
 				
 				let updated = active.update(db.get_ref()).await.unwrap();
 				
