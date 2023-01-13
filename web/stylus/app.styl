@@ -1,59 +1,10 @@
-foregroundColor = #A9ABB0
-backgroundColor = #272B32
-bodyBackgroundColor = #171C27
-borderRadius = 10px
-borderColor = #676E7E
-hoverColor = #DDDDDD
-
-absolute(x, y)
-	position absolute
-	top y
-	left x
-
-fixed(x, y)
-	position fixed
-	top y
-	left x
-
-relative(x, y)
-	position relative
-	top y
-	left x
-
-flex(dir)
-	display flex
-	flex-direction dir
-
-flexGrow()
-	flex-grow 1
-	flex-shrink 0
-
-flexGrowX(x)
-	flex-grow x
-	flex-shrink 0
-
-flexNone()
-	flex-grow 0
-	flex-shrink 0
-
-flexShrink()
-	flex-grow 0
-	flex-shrink 1
-
-flexWrap()
-	flex-wrap wrap
-
-invisible()
-	opacity 0
-	visibility hidden
-
-point()
-	cursor pointer
+@require "./mixins"
 
 body
 	color foregroundColor
 	background-color bodyBackgroundColor
 	margin 0
+	padding 0
 	font-family -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif
 	-webkit-font-smoothing antialiased
 	-moz-osx-font-smoothing grayscale
@@ -88,10 +39,12 @@ hr
 	margin 0
 
 .app
-	margin-bottom 0
-	margin-left 5%
-	margin-right 5%
-	text-align center
+	width 100vw
+	height 99vh
+	margin 0
+	color foregroundColor
+	background-color bodyBackgroundColor
+	align-items center
 	
 	& hr
 		width 90vw
@@ -99,8 +52,6 @@ hr
 		
 		&.thin
 			margin 5px auto
-	
-	& .user
-		border 1px solid borderColor
 
-//@require "./test.styl"
+
+@require "./users"

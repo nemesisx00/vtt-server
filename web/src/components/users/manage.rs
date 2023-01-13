@@ -45,11 +45,12 @@ pub fn ManageUsers(cx: Scope) -> Element
 	return cx.render(rsx!{
 		div
 		{
-			class: "manageUsers",
+			class: "manageUsers column",
 			
 			div
 			{
-				class: "heading",
+				class: "heading column",
+				
 				"Manage Users!"
 				button
 				{
@@ -60,15 +61,15 @@ pub fn ManageUsers(cx: Scope) -> Element
 			
 			div
 			{
-				class: "userList",
+				class: "userList column",
 				
 				usernames.read().iter().map(|(i, username)| rsx!(div
 				{
 					key: "{i}",
-					class: "user",
+					class: "user row",
 					
-					div { class: "row", "{username}" }
-					div { onclick: move |_| info!("Do delete dialog pop up here"), "Delete User" }
+					div { "{username}" }
+					div { class: "deleteUser", onclick: move |_| info!("Do delete dialog pop up here"), "Delete User" }
 				}))
 			}
 		}

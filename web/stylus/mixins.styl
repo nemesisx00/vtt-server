@@ -1,0 +1,51 @@
+foregroundColor = #A9ABB0
+backgroundColor = #272B32
+bodyBackgroundColor = #171C27
+borderRadius = 10px
+borderColor = #676E7E
+hoverColor = #DDDDDD
+
+absolute(x, y)
+	position absolute
+	top y
+	left x
+
+fixed(x, y)
+	position fixed
+	top y
+	left x
+
+relative(x, y)
+	position relative
+	top y
+	left x
+
+flex(dir)
+	display flex
+	flex-direction dir
+
+flexGrow()
+	flex-grow 1
+	flex-shrink 0
+
+flexGrowX(x)
+	flex-grow x
+	flex-shrink 0
+
+flexNone()
+	flex-grow 0
+	flex-shrink 0
+
+flexShrink()
+	flex-grow 0
+	flex-shrink 1
+
+flexWrap()
+	flex-wrap wrap
+
+invisible()
+	opacity 0
+	visibility hidden
+
+point()
+	cursor pointer

@@ -16,10 +16,7 @@ pub fn App(cx: Scope) -> Element
 	let showManageUsers = use_state(&cx, || false);
 	
 	return cx.render(rsx!{
-		h1
-		{
-			"vtt-server Administrator Interface"
-		}
+		h1 { "vtt-server Administrator Interface" }
 		hr {}
 		button
 		{

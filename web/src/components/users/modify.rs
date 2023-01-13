@@ -39,7 +39,7 @@ pub fn ModifyUser(cx: Scope) -> Element
 	return cx.render(rsx!{
 		div
 		{
-			class: "column",
+			class: "modifyUser column",
 			form
 			{
 				prevent_default: "onsubmit",
@@ -73,6 +73,8 @@ pub fn ModifyUser(cx: Scope) -> Element
 					div
 					{
 						class: "row",
+						
+						label { r#for: "userId", "User ID: " }
 						input { r#type: "text", name: "userId", value: "{userId}", oninput: move |e| userId.set(e.value.to_owned()) }
 					}
 				))
@@ -81,6 +83,8 @@ pub fn ModifyUser(cx: Scope) -> Element
 					div
 					{
 						class: "row",
+						
+						label { r#for: "username", "Username: " }
 						input { r#type: "text", name: "username", value: "{username}", oninput: move |e| username.set(e.value.to_owned()) }
 					}
 				))
@@ -88,6 +92,8 @@ pub fn ModifyUser(cx: Scope) -> Element
 				div
 				{
 					class: "row",
+						
+					label { r#for: "label", "Label: " }
 					input { r#type: "text", name: "label", value: "{label}", oninput: move |e| label.set(e.value.to_owned()) }
 				}
 				
@@ -95,11 +101,15 @@ pub fn ModifyUser(cx: Scope) -> Element
 					div
 					{
 						class: "row",
+						
+						label { r#for: "avatar", "Avatar: " }
 						input { r#type: "text", name: "avatar", value: "{avatar}", oninput: move |e| avatar.set(e.value.to_owned()) }
 					}
 					div
 					{
 						class: "row",
+						
+						label { r#for: "description", "Description: " }
 						input { r#type: "text", name: "description", value: "{description}", oninput: move |e| description.set(e.value.to_owned()) }
 					}
 				))
