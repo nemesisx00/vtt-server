@@ -1,3 +1,3 @@
 [build]
 dist = "../target/admin"
-public_url = "/admin/"
+public_url = "/"
