@@ -1,9 +1,12 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
-use crate::structs::{
-	User,
-	ResponseData,
+use crate::{
+	structs::{
+		User,
+		ResponseData,
+	},
+	util::location,
 };
 use std::error::Error;
 use dioxus::prelude::*;
@@ -12,75 +15,10 @@ use log::{
 	error,
 	info,
 };
-use reqwest::Client;
-
-async fn userNew(username: String, label: String) -> Result<ResponseData<User>, Box<dyn Error>>
-{
-	let resp = Client::new()
-		.post("http://127.0.0.1:8080/admin/user/new")
-		.form(&[
-			("username", username),
-			("label", label),
-		])
-		.send()
-		.await?
-		.json::<ResponseData<User>>()
-		.await;
-	
-	return Ok(resp?);
-}
-
-async fn userUpdate(userId: String, label: String, avatar: String, description: String) -> Result<ResponseData<User>, Box<dyn Error>>
-{
-	let resp = Client::new()
-		.post("http://127.0.0.1:8080/admin/user/update")
-		.form(&[
-			("userId", userId),
-			("label", label),
-			("avatar", avatar),
-			("description", description),
-		])
-		.send()
-		.await?
-		.json::<ResponseData<User>>()
-		.await;
-	
-	return Ok(resp?);
-}
-
-fn createUser(cx: &Scope, e: FormEvent)
-{
-	println!("Submitted ModifyUser form! {:?}", e.values);
-	
-	let username = e.values["username"].to_owned();
-	let label = e.values["label"].to_owned();
-	
-	cx.spawn(async move {
-		match userNew(username, label).await
-		{
-			Ok(response) => info!("User created: {:?}", response.payload),
-			Err(e) => error!("Error while creating user: {:?}", e),
-		}
-	});
-}
-
-fn modifyUser(cx: &Scope, e: FormEvent)
-{
-	println!("Submitted ModifyUser form! {:?}", e.values);
-	
-	let userId = e.values["userId"].to_owned();
-	let label = e.values["label"].to_owned();
-	let avatar = e.values["avatar"].to_owned();
-	let description = e.values["description"].to_owned();
-	
-	cx.spawn(async move {
-		match userUpdate(userId, label, avatar, description).await
-		{
-			Ok(response) => info!("User updated: {:?}", response.payload),
-			Err(e) => error!("Error while updating user: {:?}", e),
-		}
-	});
-}
+use reqwest::{
+	Client,
+	Url,
+};
 
 pub fn ModifyUser(cx: Scope) -> Element
 {
@@ -174,4 +112,80 @@ pub fn ModifyUser(cx: Scope) -> Element
 			}
 		}
 	});
+}
+
+fn createUser(cx: &Scope, e: FormEvent)
+{
+	println!("Submitted ModifyUser form! {:?}", e.values);
+	
+	let username = e.values["username"].to_owned();
+	let label = e.values["label"].to_owned();
+	
+	cx.spawn(async move {
+		match userNew(username, label).await
+		{
+			Ok(response) => info!("User created: {:?}", response.payload),
+			Err(e) => error!("Error while creating user: {:?}", e),
+		}
+	});
+}
+
+fn modifyUser(cx: &Scope, e: FormEvent)
+{
+	println!("Submitted ModifyUser form! {:?}", e.values);
+	
+	let userId = e.values["userId"].to_owned();
+	let label = e.values["label"].to_owned();
+	let avatar = e.values["avatar"].to_owned();
+	let description = e.values["description"].to_owned();
+	
+	cx.spawn(async move {
+		match userUpdate(userId, label, avatar, description).await
+		{
+			Ok(response) => info!("User updated: {:?}", response.payload),
+			Err(e) => error!("Error while updating user: {:?}", e),
+		}
+	});
+}
+
+async fn userNew(username: String, label: String) -> Result<ResponseData<User>, Box<dyn Error>>
+{
+	let endpoint = Url::parse(location().as_ref())?
+		.join("/user/new")?
+		.to_string();
+	
+	let resp = Client::new()
+		.post(endpoint)
+		.form(&[
+			("username", username),
+			("label", label),
+		])
+		.send()
+		.await?
+		.json::<ResponseData<User>>()
+		.await;
+	
+	return Ok(resp?);
+}
+
+async fn userUpdate(userId: String, label: String, avatar: String, description: String) -> Result<ResponseData<User>, Box<dyn Error>>
+{
+	let endpoint = Url::parse(location().as_ref())?
+		.join("/user/update")?
+		.to_string();
+	
+	let resp = Client::new()
+		.post(endpoint)
+		.form(&[
+			("userId", userId),
+			("label", label),
+			("avatar", avatar),
+			("description", description),
+		])
+		.send()
+		.await?
+		.json::<ResponseData<User>>()
+		.await;
+	
+	return Ok(resp?);
 }

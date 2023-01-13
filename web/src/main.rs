@@ -3,8 +3,9 @@
 
 mod components;
 mod structs;
+mod util;
 
-use components::App;
+use crate::components::App;
 
 fn main()
 {
