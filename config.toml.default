@@ -1,6 +1,16 @@
 [database]
+#
+# MySQL					mysql://root:root@localhost:3306
+# PostgreSQL			postgres://postgres:postgres@localhost:5432
+# SQLite (in file)		sqlite:./sqlite.db?mode=rwc
+# SQLite (in memory)	sqlite::memory:
+#
 connectionString = "sqlite:./sqlite.db?mode=rwc"
 
 [network]
 ip = "127.0.0.1"
 port = 8080
+
+[admin]
+ip = "127.0.0.1"
+port = 8181

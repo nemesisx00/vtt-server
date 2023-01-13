@@ -10,16 +10,13 @@ mod migrations;
 mod routes;
 
 use crate::{
-	config::{
-		loadConfig,
-		ConfigPath,
-	},
+	config::loadConfig,
 	database::getDatabaseConnection,
 	migrations::createAllTables,
 };
+use futures::future;
 use actix_web::{
 	web::{
-		self,
 		Data,
 	},
 	App,
@@ -29,28 +26,36 @@ use actix_web::{
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
-	let config = loadConfig(ConfigPath).unwrap();
+	let config = loadConfig().unwrap();
 	
 	let db = getDatabaseConnection().await.expect("Failed to connect to the database!");
 	createAllTables(&db).await.expect("Failed to run initial database migrations!");
+	let db2 = db.to_owned();
 	
-	return HttpServer::new(move ||
+	let server = HttpServer::new(move ||
 	{
 		App::new()
 			.app_data(Data::new(db.to_owned()))
 			.service(routes::api::root)
 			.service(routes::api::login)
-			.service(
-				web::scope("/admin")
-					.service(routes::admin::core::home)
-					.service(routes::admin::core::web)
-					.service(routes::admin::user::userDelete)
-					.service(routes::admin::user::userList)
-					.service(routes::admin::user::userNew)
-					.service(routes::admin::user::userUpdate)
-			)
 	})
 		.bind((config.network.ip, config.network.port))?
-		.run()
-		.await;
+		.run();
+	
+	let admin = HttpServer::new(move ||
+		{
+			App::new()
+				.app_data(Data::new(db2.to_owned()))
+				.service(routes::admin::core::home)
+				.service(routes::admin::core::web)
+				.service(routes::admin::user::userDelete)
+				.service(routes::admin::user::userList)
+				.service(routes::admin::user::userNew)
+				.service(routes::admin::user::userUpdate)
+		})
+			.bind((config.admin.ip, config.admin.port))?
+			.run();
+	
+	future::try_join(server, admin).await?;
+	return Ok(());
 }

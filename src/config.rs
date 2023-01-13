@@ -10,7 +10,12 @@ use toml;
 
 pub const ConfigPath: &str = "./config.toml";
 
-pub fn loadConfig(path: &str) -> Result<Config, Box<dyn Error>>
+pub fn loadConfig() -> Result<Config, Box<dyn Error>>
+{
+	return Ok(readConfig(ConfigPath)?);
+}
+
+pub fn readConfig(path: &str) -> Result<Config, Box<dyn Error>>
 {
 	let config = toml::from_str::<Config>(fs::read_to_string(path)?.as_str())?;
 	return Ok(config);
@@ -21,6 +26,7 @@ pub struct Config
 {
 	pub database: ConfigDatabase,
 	pub network: ConfigNetwork,
+	pub admin: ConfigNetwork,
 }
 
 #[derive(Debug, Default, Deserialize)]

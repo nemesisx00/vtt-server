@@ -2,10 +2,7 @@
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
 use crate::{
-	config::{
-		loadConfig,
-		ConfigPath,
-	},
+	config::loadConfig,
 };
 use std::error::Error;
 use sea_orm::{
@@ -15,7 +12,7 @@ use sea_orm::{
 
 pub async fn getDatabaseConnection() -> Result<DatabaseConnection, Box<dyn Error>>
 {
-	let config = loadConfig(ConfigPath)?;
+	let config = loadConfig()?;
 	let db = Database::connect(config.database.connectionString).await?;
 	return Ok(db);
 }
