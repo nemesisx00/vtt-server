@@ -3,10 +3,7 @@
 
 use crate::{
 	components::{
-		users::{
-			Manage,
-			Modify,
-		},
+		users::Manage,
 	},
 };
 use dioxus::prelude::*;
@@ -26,8 +23,6 @@ pub fn App(cx: Scope) -> Element
 		
 		showManageUsers.then(|| rsx!{
 			Manage {}
-			hr {}
-			Modify {}
 		})
 	});
 }

@@ -2,8 +2,9 @@
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
 use crate::{
+	components::users::Modify,
 	structs::User,
-	util::location,
+	util::endpoint,
 };
 use std::{
 	collections::HashMap,
@@ -11,10 +12,7 @@ use std::{
 };
 use dioxus::prelude::*;
 use dioxus::core::to_owned;
-use reqwest::{
-	Client,
-	Url,
-};
+use reqwest::Client;
 #[allow(unused_imports)]
 use log::{
 	error,
@@ -23,18 +21,20 @@ use log::{
 
 pub fn ManageUsers(cx: Scope) -> Element
 {
-	let usernames = use_ref(&cx, || HashMap::<i64, String>::new());
+	let users = use_ref(&cx, || HashMap::<usize, (i64, String)>::new());
 	
 	let refreshHandler = move |_| {
-		to_owned![usernames];
+		to_owned![users];
 		cx.spawn(async move {
 			match getUsers().await
 			{
 				Ok(fetched) => {
-					usernames.write().clear();
+					users.write().clear();
+					let mut i = 0;
 					for user in fetched
 					{
-						usernames.write().insert(user.id, user.label);
+						users.write().insert(i, (user.id, user.label));
+						i += 1;
 					}
 				},
 				_ => log::error!("getUsers() failed!"),
@@ -47,30 +47,41 @@ pub fn ManageUsers(cx: Scope) -> Element
 		{
 			class: "manageUsers column",
 			
-			div
-			{
-				class: "heading column",
-				
-				"Manage Users!"
-				button
-				{
-					onclick: refreshHandler,
-					"Refresh User List"
-				}
-			}
+			Modify { create: true }
 			
 			div
 			{
 				class: "userList column",
 				
-				usernames.read().iter().map(|(i, username)| rsx!(div
+				button
 				{
-					key: "{i}",
-					class: "user row",
+					id: "refreshUserList",
+					onclick: refreshHandler,
+					"Refresh User List"
+				}
+				
+				users.read().iter().map(|(i, (userId, label))|
+				{
+					let myId = userId.clone();
 					
-					div { "{username}" }
-					div { class: "deleteUser", onclick: move |_| info!("Do delete dialog pop up here"), "Delete User" }
-				}))
+					rsx!(
+						div
+						{
+							key: "user-{userId}",
+							class: "user row",
+							
+							div { class: "userLabel", "{label}" }
+							div
+							{
+								class: "deleteUser",
+								title: "Delete User",
+								onclick: move |_| info!("Do delete dialog pop up here for userId {}", myId)
+							}
+						}
+						
+						(*i + 1 < users.read().len()).then(|| rsx!(hr { key: "hr-{userId}" }))
+					)
+				})
 			}
 		}
 	});
@@ -78,12 +89,8 @@ pub fn ManageUsers(cx: Scope) -> Element
 
 async fn getUsers() -> Result<Vec<User>, Box<dyn Error>>
 {
-	let endpoint = Url::parse(location().as_ref())?
-		.join("/user/list")?
-		.to_string();
-	
 	let resp = Client::new()
-		.post(endpoint)
+		.post(endpoint("/user/list")?)
 		.form(&[
 			("token", "some unique token"),
 		])

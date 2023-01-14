@@ -1,21 +1,47 @@
 .app
 
 	& .manageUsers
+		border(borderRadius)
+		margin 10px 0
+		padding 10px
+		width 50%
 		
-		& .heading
-			flexShrink(1)
+		& .modifyUser
+			align-items center
+			
+			& form > .row
+				margin 5px 0
+				
+				&:last-child
+					justify-content center
+					margin-top 10px
+				
+				& label
+					margin-right 10px
+					text-align right
+					width 85px
 		
 		& .userList
 			flexGrow(1)
 			align-items center
 			
+			& hr
+				width 95%
+			
+			& #refreshUserList
+				margin-bottom 10px
+			
 			& .user
-				margin 5px
+				align-items center
+				
+				& .userLabel
+					flexGrow(1)
 			
 			& .deleteUser
 				cursor pointer
-	
-	& .modifyUser
-		
-		& > *
-			margin 5px 0
+				background-image url("/assets/delete.svg")
+				background-repeat no-repeat
+				height 15px
+				margin-top 3px
+				margin-left 10px
+				width 15px

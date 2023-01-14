@@ -6,31 +6,35 @@ use crate::{
 		User,
 		ResponseData,
 	},
-	util::location,
+	util::endpoint,
 };
 use std::error::Error;
 use dioxus::prelude::*;
-use dioxus::events::FormEvent;
+use dioxus::{
+	events::FormEvent,
+};
 use log::{
 	error,
 	info,
 };
-use reqwest::{
-	Client,
-	Url,
-};
+use reqwest::Client;
 
-pub fn ModifyUser(cx: Scope) -> Element
+#[derive(Debug, Default, PartialEq, Props)]
+pub struct ModifyUserProps
 {
-	let isCreate = use_state(&cx, || true);
-	
+	create: bool,
+}
+
+pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
+{
 	let userId = use_state(&cx, || "".to_owned());
 	let username = use_state(&cx, || "".to_owned());
 	let label = use_state(&cx, || "".to_owned());
 	let avatar = use_state(&cx, || "".to_owned());
 	let description = use_state(&cx, || "".to_owned());
 	
-	let submitText = match isCreate.get()
+	let isCreate = cx.props.create;
+	let submitText = match isCreate
 	{
 		true => "Create",
 		false => "Update",
@@ -44,7 +48,7 @@ pub fn ModifyUser(cx: Scope) -> Element
 			{
 				prevent_default: "onsubmit",
 				onsubmit: move |e| {
-					match isCreate.get()
+					match isCreate
 					{
 						true => createUser(&cx, e),
 						false => modifyUser(&cx, e),
@@ -56,18 +60,6 @@ pub fn ModifyUser(cx: Scope) -> Element
 					avatar.set("".to_owned());
 					description.set("".to_owned());
 				},
-				
-				div
-				{
-					class: "row",
-					button
-					{
-						prevent_default: "onclick",
-						r#type: "button",
-						onclick: move |_| isCreate.set(!isCreate),
-						"Toggle Mode"
-					}
-				}
 				
 				(!isCreate).then(|| rsx!(
 					div
@@ -124,7 +116,7 @@ pub fn ModifyUser(cx: Scope) -> Element
 	});
 }
 
-fn createUser(cx: &Scope, e: FormEvent)
+fn createUser(cx: &Scope<ModifyUserProps>, e: FormEvent)
 {
 	println!("Submitted ModifyUser form! {:?}", e.values);
 	
@@ -140,7 +132,7 @@ fn createUser(cx: &Scope, e: FormEvent)
 	});
 }
 
-fn modifyUser(cx: &Scope, e: FormEvent)
+fn modifyUser(cx: &Scope<ModifyUserProps>, e: FormEvent)
 {
 	println!("Submitted ModifyUser form! {:?}", e.values);
 	
@@ -160,12 +152,8 @@ fn modifyUser(cx: &Scope, e: FormEvent)
 
 async fn userNew(username: String, label: String) -> Result<ResponseData<User>, Box<dyn Error>>
 {
-	let endpoint = Url::parse(location().as_ref())?
-		.join("/user/new")?
-		.to_string();
-	
 	let resp = Client::new()
-		.post(endpoint)
+		.post(endpoint("/user/new")?)
 		.form(&[
 			("username", username),
 			("label", label),
@@ -180,12 +168,8 @@ async fn userNew(username: String, label: String) -> Result<ResponseData<User>, 
 
 async fn userUpdate(userId: String, label: String, avatar: String, description: String) -> Result<ResponseData<User>, Box<dyn Error>>
 {
-	let endpoint = Url::parse(location().as_ref())?
-		.join("/user/update")?
-		.to_string();
-	
 	let resp = Client::new()
-		.post(endpoint)
+		.post(endpoint("/user/update")?)
 		.form(&[
 			("userId", userId),
 			("label", label),

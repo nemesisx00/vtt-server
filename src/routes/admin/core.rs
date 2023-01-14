@@ -20,7 +20,7 @@ pub async fn home() -> Result<NamedFile>
 	return Ok(NamedFile::open(path)?);
 }
 
-#[get("/{filename:.*(.css|.js|.wasm)}")]
+#[get("/{filename:.*(.css|.js|.svg|.wasm)}")]
 pub async fn web(req: HttpRequest) -> Result<NamedFile>
 {
 	let filename: PathBuf = req.match_info().query("filename").parse().unwrap();
