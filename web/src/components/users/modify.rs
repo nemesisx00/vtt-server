@@ -109,7 +109,7 @@ pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
 				div
 				{
 					class: "row",
-					button { r#type: "submit", value: "{submitText}", "{submitText} the User" }
+					button { class: "button border", r#type: "submit", value: "{submitText}", "{submitText} the User" }
 				}
 			}
 		}

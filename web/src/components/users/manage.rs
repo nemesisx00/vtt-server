@@ -47,6 +47,8 @@ pub fn ManageUsers(cx: Scope) -> Element
 		{
 			class: "manageUsers column",
 			
+			h1 { "Manage Users" }
+			
 			Modify { create: true }
 			
 			div
@@ -55,6 +57,7 @@ pub fn ManageUsers(cx: Scope) -> Element
 				
 				button
 				{
+					class: "button border",
 					id: "refreshUserList",
 					onclick: refreshHandler,
 					"Refresh User List"
@@ -71,9 +74,9 @@ pub fn ManageUsers(cx: Scope) -> Element
 							class: "user row",
 							
 							div { class: "userLabel", "{label}" }
-							div
+							button
 							{
-								class: "deleteUser",
+								class: "deleteUser button",
 								title: "Delete User",
 								onclick: move |_| info!("Do delete dialog pop up here for userId {}", myId)
 							}

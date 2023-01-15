@@ -1,0 +1,51 @@
+.button
+	cursor pointer
+	padding 5px 10px
+	
+	transition all .05s ease
+	-o-transition all .05s ease
+	-ms-transition all .05s ease
+	-moz-transition all .05s ease
+	-webkit-transition all .05s ease
+	
+	user-select none
+	-moz-user-select none
+	-webkit-user-select none
+	-ms-user-select none
+	
+	&:active
+		transform scale(.95)
+		-o-transform scale(.95)
+		-ms-transform scale(.95)
+		-moz-transform scale(.95)
+		-webkit-transform scale(.95)
+	
+	&.disabled
+		border 0 none
+		color borderColor
+		cursor default
+		
+		&:active
+			transform none !important
+			-o-transform none !important
+			-ms-transform none !important
+			-moz-transform none !important
+			-webkit-transform none !important
+	
+	&.border
+		border(1px)
+	
+	& .internalText
+		//border-radius borderRadius
+		display table-cell
+		height inherit
+		text-align center
+		vertical-align middle
+		width inherit
+
+		user-select none
+		-ms-user-select none
+		-moz-user-select none
+		-khtml-user-select none
+		-webkit-user-select none
+		-webkit-touch-callout none

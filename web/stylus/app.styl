@@ -12,16 +12,12 @@ body
 
 h1, h2, h3, h4, h5, h6
 	margin 0
+	text-align center
 
 input, textarea, button, select, option
 	border 0 none
 	color foregroundColor
 	background-color backgroundColor
-
-button
-	cursor pointer
-	padding 5px 10px
-	border-radius borderRadius
 
 hr
 	border-color foregroundColor
@@ -53,4 +49,5 @@ hr
 		&.thin
 			margin 5px auto
 
+@require "./button"
 @require "./users"

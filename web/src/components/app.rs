@@ -17,10 +17,11 @@ pub fn App(cx: Scope) -> Element
 		hr {}
 		button
 		{
+			class: "button border",
 			onclick: move |_| showManageUsers.set(!showManageUsers),
 			"Manage Users"
 		}
-		
+		hr {}
 		showManageUsers.then(|| rsx!{
 			Manage {}
 		})
