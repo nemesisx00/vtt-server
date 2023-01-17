@@ -17,6 +17,7 @@ use std::{
 	error::Error,
 };
 use dioxus::prelude::*;
+use dioxus::events::FormEvent;
 use dioxus_elements::geometry::PagePoint;
 use reqwest::Client;
 #[allow(unused_imports)]
@@ -27,7 +28,7 @@ use log::{
 
 pub fn ManageUsers(cx: Scope) -> Element
 {
-	let createUser = use_state(&cx, || true);
+	let createMode = use_state(&cx, || true);
 	let idToDelete = use_state(&cx, || None);
 	let popupCoords = use_state(&cx, || PagePoint::default());
 	let selectedUser = use_ref(&cx, || None);
@@ -45,10 +46,21 @@ pub fn ManageUsers(cx: Scope) -> Element
 						if result == true
 						{
 							idToDelete.set(None);
-							users.write().remove(&userId);
+							
+							match getUsers().await
+							{
+								Ok(fetched) => {
+									users.write().clear();
+									for user in fetched
+									{
+										users.write().insert(user.id, user.to_owned());
+									}
+								},
+								_ => error!("getUsers() failed!"),
+							};
 						}
 					},
-					_ => log::error!("deleteUser({}) failed!", userId),
+					_ => error!("deleteUser({}) failed!", userId),
 				};
 			})
 		}
@@ -67,9 +79,67 @@ pub fn ManageUsers(cx: Scope) -> Element
 						users.write().insert(user.id, user.to_owned());
 					}
 				},
-				_ => log::error!("getUsers() failed!"),
+				_ => error!("getUsers() failed!"),
 			};
 		})
+	};
+	
+	let submitHandler = move |e: FormEvent| {
+		to_owned![users];
+		
+		match createMode.get()
+		{
+			true => cx.spawn(async move {
+				let username = e.values["username"].to_owned();
+				let label = e.values["label"].to_owned();
+				
+				match createUser(username, label).await
+				{
+					Ok(response) => info!("User created: {:?}", response.payload),
+					Err(e) => error!("Error while creating user: {:?}", e),
+				}
+				
+				match getUsers().await
+				{
+					Ok(fetched) => {
+						users.write().clear();
+						for user in fetched
+						{
+							users.write().insert(user.id, user.to_owned());
+						}
+					},
+					_ => error!("getUsers() failed!"),
+				};
+			}),
+			
+			false => cx.spawn(async move {
+				let userId = e.values["userId"].to_owned();
+				let label = e.values["label"].to_owned();
+				let avatar = e.values["avatar"].to_owned();
+				let description = e.values["description"].to_owned();
+				
+				match updateUser(userId, label, avatar, description).await
+				{
+					Ok(response) => info!("User updated: {:?}", response.payload),
+					Err(e) => error!("Error while updating user: {:?}", e),
+				}
+				
+				match getUsers().await
+				{
+					Ok(fetched) => {
+						users.write().clear();
+						for user in fetched
+						{
+							users.write().insert(user.id, user.to_owned());
+						}
+					},
+					_ => error!("getUsers() failed!"),
+				};
+			}),
+		};
+		
+		createMode.set(true);
+		selectedUser.set(None);
 	};
 	
 	let showConfirm = match idToDelete.get()
@@ -77,8 +147,6 @@ pub fn ManageUsers(cx: Scope) -> Element
 		Some(_) => true,
 		None => false,
 	};
-	
-	let userOption: Option<User> = selectedUser.read().to_owned();
 	
 	return cx.render(rsx!{
 		div
@@ -89,12 +157,13 @@ pub fn ManageUsers(cx: Scope) -> Element
 			
 			Modify
 			{
-				create: createUser.get().to_owned(),
-				user: userOption,
-				onSubmit: move |_| {
-					createUser.set(true);
+				create: createMode.get().to_owned(),
+				user: selectedUser.read().to_owned(),
+				onSubmit: submitHandler,
+				onCancel: move |_| {
+					createMode.set(true);
 					selectedUser.set(None);
-				},
+				}
 			}
 			
 			button
@@ -124,7 +193,7 @@ pub fn ManageUsers(cx: Scope) -> Element
 							{
 								class: "userLabel",
 								onclick: move |_| {
-									createUser.set(false);
+									createMode.set(false);
 									selectedUser.set(Some(currUser.to_owned()));
 								},
 								"{user.label}",
@@ -154,9 +223,7 @@ pub fn ManageUsers(cx: Scope) -> Element
 					cancelText: "No",
 					coords: popupCoords.get().clone(),
 					onAccept: deleteHandler,
-					onCancel: move |_| {
-						idToDelete.set(None);
-					},
+					onCancel: move |_| idToDelete.set(None),
 				}
 			))
 		}
@@ -189,7 +256,7 @@ async fn deleteUser(id: i64) -> Result<bool, Box<dyn Error>>
 			},
 		},
 		Err(e) => {
-			log::error!("Failed to retrieve Users list: {:?}", e);
+			error!("Failed to retrieve Users list: {:?}", e);
 			Ok(false)
 		},
 	};
@@ -211,8 +278,42 @@ async fn getUsers() -> Result<Vec<User>, Box<dyn Error>>
 	match resp
 	{
 		Ok(res) => o = res.to_owned(),
-		Err(e) => log::error!("Failed to retrieve Users list: {:?}", e),
+		Err(e) => error!("Failed to retrieve Users list: {:?}", e),
 	}
 	
 	return Ok(o);
+}
+
+async fn createUser(username: String, label: String) -> Result<ResponseData<User>, Box<dyn Error>>
+{
+	let resp = Client::new()
+		.post(endpoint("/user/new")?)
+		.form(&[
+			("username", username),
+			("label", label),
+		])
+		.send()
+		.await?
+		.json::<ResponseData<User>>()
+		.await;
+	
+	return Ok(resp?);
+}
+
+async fn updateUser(userId: String, label: String, avatar: String, description: String) -> Result<ResponseData<User>, Box<dyn Error>>
+{
+	let resp = Client::new()
+		.post(endpoint("/user/update")?)
+		.form(&[
+			("userId", userId),
+			("label", label),
+			("avatar", avatar),
+			("description", description),
+		])
+		.send()
+		.await?
+		.json::<ResponseData<User>>()
+		.await;
+	
+	return Ok(resp?);
 }

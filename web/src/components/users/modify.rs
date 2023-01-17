@@ -1,25 +1,13 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
-use crate::{
-	structs::{
-		User,
-		ResponseData,
-	},
-	util::endpoint,
-};
-use std::error::Error;
+use crate::structs::User;
 use dioxus::prelude::*;
 use dioxus::{
 	events::{
 		FormEvent,
 	},
 };
-use log::{
-	error,
-	info,
-};
-use reqwest::Client;
 
 #[derive(Props)]
 pub struct ModifyUserProps<'a>
@@ -29,7 +17,8 @@ pub struct ModifyUserProps<'a>
 	#[props(!optional)]
 	user: Option<User>,
 	
-	onSubmit: EventHandler<'a, FormEvent>
+	onSubmit: EventHandler<'a, FormEvent>,
+	onCancel: EventHandler<'a, MouseEvent>,
 }
 
 pub fn ModifyUser<'a>(cx: Scope<'a, ModifyUserProps>) -> Element<'a>
@@ -66,15 +55,7 @@ pub fn ModifyUser<'a>(cx: Scope<'a, ModifyUserProps>) -> Element<'a>
 			form
 			{
 				prevent_default: "onsubmit",
-				onsubmit: move |e| {
-					match isCreate
-					{
-						true => createUser(&cx, e.to_owned()),
-						false => modifyUser(&cx, e.to_owned()),
-					}
-					
-					cx.props.onSubmit.call(e);
-				},
+				onsubmit: move |e| cx.props.onSubmit.call(e),
 				
 				(!isCreate).then(|| rsx!(
 					div
@@ -82,7 +63,7 @@ pub fn ModifyUser<'a>(cx: Scope<'a, ModifyUserProps>) -> Element<'a>
 						class: "row",
 						
 						label { r#for: "userId", "User ID: " }
-						input { disabled: "", r#type: "text", value: "{user.id}" }
+						span { "{user.id}" }
 						input { r#type: "hidden", name: "userId", value: "{user.id}" }
 					}
 				))
@@ -124,78 +105,13 @@ pub fn ModifyUser<'a>(cx: Scope<'a, ModifyUserProps>) -> Element<'a>
 				
 				div
 				{
-					class: "row",
-					button { class: "button border", r#type: "submit", value: "{submitText}", "{submitText} the User" }
+					class: "row formButtons",
+					input { class: "button border", r#type: "submit", value: "{submitText}", "{submitText} the User" }
+					(!isCreate).then(|| rsx!(
+						button { class: "button border", onclick: move |e| cx.props.onCancel.call(e), "Cancel" }
+					))
 				}
 			}
 		}
 	});
-}
-
-fn createUser(cx: &Scope<ModifyUserProps>, e: FormEvent)
-{
-	println!("Submitted ModifyUser form! {:?}", e.values);
-	
-	let username = e.values["username"].to_owned();
-	let label = e.values["label"].to_owned();
-	
-	cx.spawn(async move {
-		match userNew(username, label).await
-		{
-			Ok(response) => info!("User created: {:?}", response.payload),
-			Err(e) => error!("Error while creating user: {:?}", e),
-		}
-	});
-}
-
-fn modifyUser(cx: &Scope<ModifyUserProps>, e: FormEvent)
-{
-	println!("Submitted ModifyUser form! {:?}", e.values);
-	
-	let userId = e.values["userId"].to_owned();
-	let label = e.values["label"].to_owned();
-	let avatar = e.values["avatar"].to_owned();
-	let description = e.values["description"].to_owned();
-	
-	cx.spawn(async move {
-		match userUpdate(userId, label, avatar, description).await
-		{
-			Ok(response) => info!("User updated: {:?}", response.payload),
-			Err(e) => error!("Error while updating user: {:?}", e),
-		}
-	});
-}
-
-async fn userNew(username: String, label: String) -> Result<ResponseData<User>, Box<dyn Error>>
-{
-	let resp = Client::new()
-		.post(endpoint("/user/new")?)
-		.form(&[
-			("username", username),
-			("label", label),
-		])
-		.send()
-		.await?
-		.json::<ResponseData<User>>()
-		.await;
-	
-	return Ok(resp?);
-}
-
-async fn userUpdate(userId: String, label: String, avatar: String, description: String) -> Result<ResponseData<User>, Box<dyn Error>>
-{
-	let resp = Client::new()
-		.post(endpoint("/user/update")?)
-		.form(&[
-			("userId", userId),
-			("label", label),
-			("avatar", avatar),
-			("description", description),
-		])
-		.send()
-		.await?
-		.json::<ResponseData<User>>()
-		.await;
-	
-	return Ok(resp?);
 }
