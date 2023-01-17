@@ -34,8 +34,6 @@ pub struct ModifyUserProps<'a>
 
 pub fn ModifyUser<'a>(cx: Scope<'a, ModifyUserProps>) -> Element<'a>
 {
-	info!("ModifyUser user: {:?}", &cx.props.user);
-	
 	let isCreate = cx.props.create;
 	let submitText = match isCreate
 	{

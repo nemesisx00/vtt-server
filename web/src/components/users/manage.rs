@@ -79,7 +79,6 @@ pub fn ManageUsers(cx: Scope) -> Element
 	};
 	
 	let userOption: Option<User> = selectedUser.read().to_owned();
-	info!("ManageUsers user: {:?}", userOption);
 	
 	return cx.render(rsx!{
 		div
