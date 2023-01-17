@@ -11,7 +11,9 @@ use crate::{
 use std::error::Error;
 use dioxus::prelude::*;
 use dioxus::{
-	events::FormEvent,
+	events::{
+		FormEvent,
+	},
 };
 use log::{
 	error,
@@ -19,25 +21,44 @@ use log::{
 };
 use reqwest::Client;
 
-#[derive(Debug, Default, PartialEq, Props)]
-pub struct ModifyUserProps
+#[derive(Props)]
+pub struct ModifyUserProps<'a>
 {
 	create: bool,
+	
+	#[props(!optional)]
+	user: Option<User>,
+	
+	onSubmit: EventHandler<'a, FormEvent>
 }
 
-pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
+pub fn ModifyUser<'a>(cx: Scope<'a, ModifyUserProps>) -> Element<'a>
 {
-	let userId = use_state(&cx, || "".to_owned());
-	let username = use_state(&cx, || "".to_owned());
-	let label = use_state(&cx, || "".to_owned());
-	let avatar = use_state(&cx, || "".to_owned());
-	let description = use_state(&cx, || "".to_owned());
+	info!("ModifyUser user: {:?}", &cx.props.user);
 	
 	let isCreate = cx.props.create;
 	let submitText = match isCreate
 	{
 		true => "Create",
 		false => "Update",
+	};
+	
+	let user = match cx.props.user.to_owned()
+	{
+		Some(user) => user,
+		None => User::default(),
+	};
+	
+	let avatar = match user.avatar
+	{
+		Some(value) => value,
+		None => "".to_string(),
+	};
+	
+	let description = match user.description
+	{
+		Some(value) => value,
+		None => "".to_string(),
 	};
 	
 	return cx.render(rsx!{
@@ -50,15 +71,11 @@ pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
 				onsubmit: move |e| {
 					match isCreate
 					{
-						true => createUser(&cx, e),
-						false => modifyUser(&cx, e),
+						true => createUser(&cx, e.to_owned()),
+						false => modifyUser(&cx, e.to_owned()),
 					}
 					
-					userId.set("".to_owned());
-					username.set("".to_owned());
-					label.set("".to_owned());
-					avatar.set("".to_owned());
-					description.set("".to_owned());
+					cx.props.onSubmit.call(e);
 				},
 				
 				(!isCreate).then(|| rsx!(
@@ -67,7 +84,8 @@ pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
 						class: "row",
 						
 						label { r#for: "userId", "User ID: " }
-						input { r#type: "text", name: "userId", value: "{userId}", oninput: move |e| userId.set(e.value.to_owned()) }
+						input { disabled: "", r#type: "text", value: "{user.id}" }
+						input { r#type: "hidden", name: "userId", value: "{user.id}" }
 					}
 				))
 				
@@ -77,7 +95,7 @@ pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
 						class: "row",
 						
 						label { r#for: "username", "Username: " }
-						input { r#type: "text", name: "username", value: "{username}", oninput: move |e| username.set(e.value.to_owned()) }
+						input { r#type: "text", name: "username", value: "{user.username}" }
 					}
 				))
 				
@@ -86,7 +104,7 @@ pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
 					class: "row",
 						
 					label { r#for: "label", "Label: " }
-					input { r#type: "text", name: "label", value: "{label}", oninput: move |e| label.set(e.value.to_owned()) }
+					input { r#type: "text", name: "label", value: "{user.label}" }
 				}
 				
 				(!isCreate).then(|| rsx!(
@@ -95,14 +113,14 @@ pub fn ModifyUser(cx: Scope<ModifyUserProps>) -> Element
 						class: "row",
 						
 						label { r#for: "avatar", "Avatar: " }
-						input { r#type: "text", name: "avatar", value: "{avatar}", oninput: move |e| avatar.set(e.value.to_owned()) }
+						input { r#type: "text", name: "avatar", value: "{avatar}" }
 					}
 					div
 					{
 						class: "row",
 						
 						label { r#for: "description", "Description: " }
-						input { r#type: "text", name: "description", value: "{description}", oninput: move |e| description.set(e.value.to_owned()) }
+						input { r#type: "text", name: "description", value: "{description}" }
 					}
 				))
 				

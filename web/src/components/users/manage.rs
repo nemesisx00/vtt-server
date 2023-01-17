@@ -27,9 +27,11 @@ use log::{
 
 pub fn ManageUsers(cx: Scope) -> Element
 {
-	let users = use_ref(&cx, || BTreeMap::<i64, String>::new());
-	let idToDelete: &UseState<Option<i64>> = use_state(&cx, || None);
+	let createUser = use_state(&cx, || true);
+	let idToDelete = use_state(&cx, || None);
 	let popupCoords = use_state(&cx, || PagePoint::default());
+	let selectedUser = use_ref(&cx, || None);
+	let users = use_ref(&cx, || BTreeMap::<i64, User>::new());
 	
 	let deleteHandler = move |_| {
 		to_owned![idToDelete, users];
@@ -62,7 +64,7 @@ pub fn ManageUsers(cx: Scope) -> Element
 					users.write().clear();
 					for user in fetched
 					{
-						users.write().insert(user.id, user.label);
+						users.write().insert(user.id, user.to_owned());
 					}
 				},
 				_ => log::error!("getUsers() failed!"),
@@ -76,6 +78,9 @@ pub fn ManageUsers(cx: Scope) -> Element
 		None => false,
 	};
 	
+	let userOption: Option<User> = selectedUser.read().to_owned();
+	info!("ManageUsers user: {:?}", userOption);
+	
 	return cx.render(rsx!{
 		div
 		{
@@ -83,8 +88,16 @@ pub fn ManageUsers(cx: Scope) -> Element
 			
 			h1 { "Manage Users" }
 			
-			Modify { create: true }
-				
+			Modify
+			{
+				create: createUser.get().to_owned(),
+				user: userOption,
+				onSubmit: move |_| {
+					createUser.set(true);
+					selectedUser.set(None);
+				},
+			}
+			
 			button
 			{
 				class: "button border",
@@ -97,9 +110,10 @@ pub fn ManageUsers(cx: Scope) -> Element
 			{
 				class: "userList column",
 				
-				users.read().iter().map(|(userId, label)|
+				users.read().iter().map(|(userId, user)|
 				{
-					let currId = userId.clone();
+					let currId = userId.to_owned();
+					let currUser = user.to_owned();
 					
 					rsx!(
 						div
@@ -107,7 +121,16 @@ pub fn ManageUsers(cx: Scope) -> Element
 							key: "div{userId}",
 							class: "user row",
 							
-							div { class: "userLabel", "{label}" }
+							div
+							{
+								class: "userLabel",
+								onclick: move |_| {
+									createUser.set(false);
+									selectedUser.set(Some(currUser.to_owned()));
+								},
+								"{user.label}",
+							}
+							
 							button
 							{
 								class: "deleteUser button",
