@@ -2,16 +2,22 @@
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
 use crate::{
-	components::users::Modify,
-	structs::User,
+	components::{
+		dialog::Confirm,
+		users::Modify,
+	},
+	structs::{
+		User,
+		ResponseData,
+	},
 	util::endpoint,
 };
 use std::{
-	collections::HashMap,
+	collections::BTreeMap,
 	error::Error,
 };
 use dioxus::prelude::*;
-use dioxus::core::to_owned;
+use dioxus_elements::geometry::PagePoint;
 use reqwest::Client;
 #[allow(unused_imports)]
 use log::{
@@ -21,25 +27,53 @@ use log::{
 
 pub fn ManageUsers(cx: Scope) -> Element
 {
-	let users = use_ref(&cx, || HashMap::<usize, (i64, String)>::new());
+	let users = use_ref(&cx, || BTreeMap::<i64, String>::new());
+	let idToDelete: &UseState<Option<i64>> = use_state(&cx, || None);
+	let popupCoords = use_state(&cx, || PagePoint::default());
+	
+	let deleteHandler = move |_| {
+		to_owned![idToDelete, users];
+		
+		if let Some(userId) = idToDelete.get().clone()
+		{
+			cx.spawn(async move {
+				match deleteUser(userId).await
+				{
+					Ok(result) => {
+						if result == true
+						{
+							idToDelete.set(None);
+							users.write().remove(&userId);
+						}
+					},
+					_ => log::error!("deleteUser({}) failed!", userId),
+				};
+			})
+		}
+	};
 	
 	let refreshHandler = move |_| {
 		to_owned![users];
+		
 		cx.spawn(async move {
 			match getUsers().await
 			{
 				Ok(fetched) => {
 					users.write().clear();
-					let mut i = 0;
 					for user in fetched
 					{
-						users.write().insert(i, (user.id, user.label));
-						i += 1;
+						users.write().insert(user.id, user.label);
 					}
 				},
 				_ => log::error!("getUsers() failed!"),
 			};
 		})
+	};
+	
+	let showConfirm = match idToDelete.get()
+	{
+		Some(_) => true,
+		None => false,
 	};
 	
 	return cx.render(rsx!{
@@ -50,27 +84,27 @@ pub fn ManageUsers(cx: Scope) -> Element
 			h1 { "Manage Users" }
 			
 			Modify { create: true }
+				
+			button
+			{
+				class: "button border",
+				id: "refreshUserList",
+				onclick: refreshHandler,
+				"Refresh User List"
+			}
 			
 			div
 			{
 				class: "userList column",
 				
-				button
+				users.read().iter().map(|(userId, label)|
 				{
-					class: "button border",
-					id: "refreshUserList",
-					onclick: refreshHandler,
-					"Refresh User List"
-				}
-				
-				users.read().iter().map(|(i, (userId, label))|
-				{
-					let myId = userId.clone();
+					let currId = userId.clone();
 					
 					rsx!(
 						div
 						{
-							key: "user-{userId}",
+							key: "div{userId}",
 							class: "user row",
 							
 							div { class: "userLabel", "{label}" }
@@ -78,16 +112,65 @@ pub fn ManageUsers(cx: Scope) -> Element
 							{
 								class: "deleteUser button",
 								title: "Delete User",
-								onclick: move |_| info!("Do delete dialog pop up here for userId {}", myId)
+								onclick: move |e| {
+									idToDelete.set(Some(currId));
+									popupCoords.set(e.data.page_coordinates());
+								},
 							}
 						}
 						
-						(*i + 1 < users.read().len()).then(|| rsx!(hr { key: "hr-{userId}" }))
+						hr { key: "hr{userId}" }
 					)
 				})
 			}
+			
+			showConfirm.then(|| rsx!(
+				Confirm
+				{
+					bodyText: "Are you sure you want to delete this user?",
+					acceptText: "Yes",
+					cancelText: "No",
+					coords: popupCoords.get().clone(),
+					onAccept: deleteHandler,
+					onCancel: move |_| {
+						idToDelete.set(None);
+					},
+				}
+			))
 		}
 	});
+}
+
+async fn deleteUser(id: i64) -> Result<bool, Box<dyn Error>>
+{
+	let resp = Client::new()
+		.post(endpoint("/user/delete")?)
+		.form(&[
+			("userId", id),
+		])
+		.send()
+		.await?
+		.json::<ResponseData<bool>>()
+		.await;
+	
+	return match resp
+	{
+		Ok(res) => match res.payload
+		{
+			Some(payload) => {
+				info!("{}", res.message);
+				Ok(payload)
+			},
+			None => {
+				error!("{}", res.message);
+				Ok(false)
+			},
+		},
+		Err(e) => {
+			log::error!("Failed to retrieve Users list: {:?}", e);
+			Ok(false)
+		},
+	};
 }
 
 async fn getUsers() -> Result<Vec<User>, Box<dyn Error>>

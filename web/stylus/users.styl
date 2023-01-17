@@ -21,15 +21,20 @@
 					text-align right
 					width 85px
 		
+		& #refreshUserList
+			align-self center
+			margin-bottom 10px
+			width 25%
+		
 		& .userList
 			flexGrow(1)
 			align-items center
 			
 			& hr
 				width 95%
-			
-			& #refreshUserList
-				margin-bottom 10px
+				
+				&:last-child
+					display none
 			
 			& .user
 				align-items center
@@ -38,7 +43,7 @@
 					flexGrow(1)
 			
 			& .deleteUser
-				background url("/assets/delete.svg") no-repeat
+				background url('/assets/delete.svg') no-repeat
 				height 20px
 				position relative
 				top 1px
