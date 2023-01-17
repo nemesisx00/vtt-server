@@ -11,7 +11,7 @@ pub struct User
 {
 	pub id: i64,
 	pub label: String,
-	pub name: Option<String>,
+	pub username: String,
 	pub avatar: Option<String>,
 	pub description: Option<String>,
 }
