@@ -2,6 +2,7 @@
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
 mod app;
+mod dialog;
 mod users;
 
 pub use app::App as App;
