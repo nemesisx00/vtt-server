@@ -9,6 +9,10 @@ use sea_orm::{
 	EntityTrait,
 	Schema,
 };
+use log::{
+	error,
+	info,
+};
 
 async fn createTable<E>(db: &DatabaseConnection, entity: E)
 	where E: EntityTrait
@@ -19,8 +23,8 @@ async fn createTable<E>(db: &DatabaseConnection, entity: E)
 	
 	match db.execute(stmt).await
 	{
-		Ok(_) => {},//println!("Migrated {}", entity.table_name()),
-		Err(e) => println!("Error: {}", e),
+		Ok(_) => {},//info!("Migrated {}", entity.table_name()),
+		Err(e) => error!("Error: {}", e),
 	};
 }
 

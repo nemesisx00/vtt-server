@@ -32,6 +32,10 @@ use sea_orm::{
 	DatabaseConnection,
 	EntityTrait, ModelTrait,
 };
+use log::{
+	error,
+	info,
+};
 
 #[post("/user/delete")]
 pub async fn userDelete(data: Form<DeleteUserData>, db: Data<DatabaseConnection>) -> impl Responder
@@ -44,14 +48,14 @@ pub async fn userDelete(data: Form<DeleteUserData>, db: Data<DatabaseConnection>
 			{
 				Ok(result) => ResponseData::<bool> { payload: Some(true), message: format!("Deleted {} users!", result.rows_affected) },
 				Err(e) => {
-					println!("Error deleting user {}: {:?}", data.userId, e);
+					error!("Error deleting user {}: {:?}", data.userId, e);
 					ResponseData::<bool> { payload: Some(false), message: "Failed to delete user!".to_owned() }
 				}
 			},
 			None => ResponseData::<bool> { payload: Some(true), message: "No user to delete!".to_owned() }
 		},
 		Err(e) => {
-			println!("Error finding user {}: {:?}", data.userId, e);
+			error!("Error finding user {}: {:?}", data.userId, e);
 			ResponseData::<bool> { payload: Some(false), message: "Failed to find user to delete!".to_owned() }
 		}
 	};
@@ -69,7 +73,7 @@ pub async fn userList(db: Data<DatabaseConnection>) -> impl Responder
 	match user::Entity::find().all(db.get_ref()).await
 	{
 		Ok(result) => users = result,
-		Err(e) => println!("Error retrieving all users: {}", e),
+		Err(e) => error!("Error retrieving all users: {}", e),
 	}
 	
 	let json = serde_json::to_string(&users).unwrap();
@@ -99,7 +103,7 @@ pub async fn userNew(data: Form<CreateUserData>, db: Data<DatabaseConnection>) -
 		{
 			Ok(user) => ResponseData { payload: Some(user), message: "User created successfully!".to_owned() },
 			Err(e) => {
-				println!("Error creating user: {}", e);
+				error!("Error creating user: {}", e);
 				ResponseData { message: "Failed to create user!".to_owned(), ..Default::default() }
 			},
 		};
