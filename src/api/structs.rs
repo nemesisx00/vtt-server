@@ -1,6 +1,10 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
+use crate::entities::{
+	Token,
+	User,
+};
 use serde::{
 	Deserialize,
 	Serialize,
@@ -30,6 +34,20 @@ pub struct DeleteUserData
 pub struct LoginData
 {
 	pub userId: i64,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Point2D
+{
+	pub x: f64,
+	pub y: f64,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+pub struct TokenUser
+{
+	pub token: Token,
+	pub user: Option<User>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]

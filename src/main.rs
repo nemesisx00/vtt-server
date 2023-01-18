@@ -36,8 +36,9 @@ async fn main() -> std::io::Result<()>
 	{
 		App::new()
 			.app_data(Data::new(db.to_owned()))
-			.service(routes::api::root)
-			.service(routes::api::login)
+			.service(routes::api::root::root)
+			.service(routes::api::root::login)
+			.service(routes::api::token::getToken)
 	})
 		.bind((config.network.ip, config.network.port))?
 		.run();

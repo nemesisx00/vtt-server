@@ -84,7 +84,7 @@ mod tests
 		let app = test::init_service(
 			App::new()
 				.app_data(Data::new(db.to_owned()))
-				.service(routes::api::login)
+				.service(routes::api::root::login)
 		).await;
 		
 		let data = LoginData { userId: expectedId };
@@ -109,7 +109,7 @@ mod tests
 		let app = test::init_service(
 			App::new()
 				.app_data(Data::new(db.to_owned()))
-				.service(routes::api::login)
+				.service(routes::api::root::login)
 		).await;
 		
 		let active = UserActive

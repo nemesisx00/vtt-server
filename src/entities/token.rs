@@ -1,7 +1,10 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 #![cfg_attr(debug_assertions, allow(dead_code))]
 
-use crate::entities::user;
+use crate::{
+	api::structs::Point2D,
+	entities::user,
+};
 use sea_orm::entity::prelude::*;
 use serde::{
 	Deserialize,
@@ -14,9 +17,19 @@ pub struct Model
 {
 	#[sea_orm(primary_key)]
 	pub id: i64,
-	pub label: Option<String>,
+	pub label: String,
 	pub avatar: String,
+	pub x: f64,
+	pub y: f64,
 	pub ownerId: i64,
+}
+
+impl Model
+{
+	fn point(&self) -> Point2D
+	{
+		return Point2D { x: self.x, y: self.y };
+	}
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
